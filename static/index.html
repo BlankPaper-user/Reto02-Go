@@ -4,411 +4,134 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parser JSON de Bajo Nivel - Reto #2</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            min-height: 600px;
-        }
-
-        .input-section, .output-section {
-            padding: 30px;
-        }
-
-        .input-section {
-            background: #f8f9fa;
-            border-right: 2px solid #e9ecef;
-        }
-
-        .section-title {
-            font-size: 1.4em;
-            margin-bottom: 20px;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-        }
-
-        .input-area {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        #jsonInput {
-            width: 100%;
-            min-height: 300px;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-            transition: border-color 0.3s ease;
-        }
-
-        #jsonInput:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-            transform: translateY(-2px);
-        }
-
-        .examples {
-            margin-top: 20px;
-        }
-
-        .examples-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .example-btn {
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: left;
-            font-size: 13px;
-        }
-
-        .example-btn:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
-            transform: translateY(-1px);
-        }
-
-        .output-section {
-            background: white;
-        }
-
-        .result-container {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 300px;
-            border: 2px solid #e9ecef;
-        }
-
-        .result-success {
-            border-color: #28a745;
-            background: #f8fff9;
-        }
-
-        .result-error {
-            border-color: #dc3545;
-            background: #fff8f8;
-        }
-
-        .result-content {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .error-message {
-            color: #dc3545;
-            font-weight: 500;
-        }
-
-        .success-message {
-            color: #28a745;
-            font-weight: 500;
-        }
-
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 15px;
-        }
-
-        .status-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .status-idle {
-            background: #e2e3e5;
-            color: #383d41;
-            border: 1px solid #d6d8db;
-        }
-
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .input-section {
-                border-right: none;
-                border-bottom: 2px solid #e9ecef;
-            }
-            
-            .controls {
-                justify-content: center;
-            }
-            
-            .examples-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 12px;
-        }
-
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Parser JSON de Bajo Nivel</h1>
-            <p>Reto #2 - Implementación desde cero en Go</p>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="bg-primary text-white text-center py-4 mb-4">
+                    <h1 class="display-4"><i class="fas fa-code"></i> Parser JSON de Bajo Nivel</h1>
+                    <p class="lead">Reto #2 - Implementación desde cero en Go</p>
+                </div>
+            </div>
         </div>
 
-        <div class="main-content">
-            <div class="input-section">
-                <h2 class="section-title">📝 Entrada JSON</h2>
-                
-                <div class="input-area">
-                    <textarea 
-                        id="jsonInput" 
-                        placeholder="Ingresa tu JSON aquí...&#10;&#10;Ejemplo:&#10;{&#10;  &quot;nombre&quot;: &quot;Juan&quot;,&#10;  &quot;edad&quot;: 30,&#10;  &quot;activo&quot;: true&#10;}"
-                    ></textarea>
-                </div>
-
-                <div class="controls">
-                    <button class="btn btn-primary" onclick="parseJSON()">
-                        🔍 Parsear JSON
-                    </button>
-                    <button class="btn btn-secondary" onclick="clearInput()">
-                        🗑️ Limpiar
-                    </button>
-                    <button class="btn btn-success" onclick="formatJSON()">
-                        ✨ Formatear
-                    </button>
-                    <div class="tooltip">
-                        <button class="btn btn-secondary" onclick="loadExamples()">
-                            📚 Ejemplos
-                        </button>
-                        <span class="tooltiptext">Cargar ejemplos predefinidos</span>
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Input Section -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h4><i class="fas fa-edit"></i> Entrada JSON</h4>
                     </div>
-                </div>
+                    <div class="card-body">
+                        <!-- Textarea -->
+                        <div class="mb-3">
+                            <textarea 
+                                id="jsonInput" 
+                                class="form-control font-monospace" 
+                                rows="15"
+                                placeholder="Ingresa tu JSON aquí...
 
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="charCount">0</div>
-                        <div class="stat-label">Caracteres</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="lineCount">1</div>
-                        <div class="stat-label">Líneas</div>
-                    </div>
-                </div>
+Ejemplo:
+{
+  &quot;nombre&quot;: &quot;Juan&quot;,
+  &quot;edad&quot;: 30,
+  &quot;activo&quot;: true
+}"
+                            ></textarea>
+                        </div>
 
-                <div class="examples">
-                    <h3>🎯 Ejemplos Rápidos</h3>
-                    <div class="examples-grid" id="examplesGrid">
-                        <!-- Los ejemplos se cargarán aquí dinámicamente -->
+                        <!-- Control Buttons -->
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button class="btn btn-primary" onclick="parseJSON()">
+                                <i class="fas fa-search"></i> Parsear JSON
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearInput()">
+                                <i class="fas fa-trash"></i> Limpiar
+                            </button>
+                            <button class="btn btn-success" onclick="formatJSON()">
+                                <i class="fas fa-magic"></i> Formatear
+                            </button>
+                            <button class="btn btn-info" onclick="loadExamples()">
+                                <i class="fas fa-book"></i> Cargar Ejemplos
+                            </button>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card text-center">
+                                    <div class="card-body py-2">
+                                        <h5 class="card-title text-primary" id="charCount">0</h5>
+                                        <small class="text-muted">Caracteres</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card text-center">
+                                    <div class="card-body py-2">
+                                        <h5 class="card-title text-primary" id="lineCount">1</h5>
+                                        <small class="text-muted">Líneas</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Examples -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Ejemplos Rápidos</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row" id="examplesGrid">
+                                    <!-- Los ejemplos se cargarán aquí -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="output-section">
-                <h2 class="section-title">📊 Resultado del Parseo</h2>
-                
-                <div class="status-indicator status-idle" id="statusIndicator">
-                    ⏳ Esperando entrada...
-                </div>
+            <!-- Output Section -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h4><i class="fas fa-chart-bar"></i> Resultado del Parseo</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Status Indicator -->
+                        <div class="alert alert-info" role="alert" id="statusIndicator">
+                            <i class="fas fa-clock"></i> Esperando entrada...
+                        </div>
 
-                <div class="result-container" id="resultContainer">
-                    <div class="result-content" id="resultContent">
-                        Ingresa un JSON válido en el área de texto de la izquierda y presiona "Parsear JSON" para ver el resultado.
-                        
-                        <br><br><strong>Características del parser:</strong>
-                        <br>• ✅ Objetos JSON → map[string]interface{}
-                        <br>• ✅ Arrays JSON → []interface{}
-                        <br>• ✅ Strings con caracteres de escape
-                        <br>• ✅ Números (enteros y decimales)
-                        <br>• ✅ Booleanos (true/false)
-                        <br>• ✅ Valores null
-                        <br>• ✅ Estructuras anidadas
-                        <br>• ✅ Manejo detallado de errores
+                        <!-- Result Container -->
+                        <div class="card" id="resultContainer">
+                            <div class="card-body">
+                                <pre class="mb-0" id="resultContent">Ingresa un JSON válido en el área de texto de la izquierda y presiona "Parsear JSON" para ver el resultado.
+
+<strong>Características del parser:</strong>
+• ✅ Objetos JSON → map[string]interface{}
+• ✅ Arrays JSON → []interface{}
+• ✅ Strings con caracteres de escape
+• ✅ Números (enteros y decimales)
+• ✅ Booleanos (true/false)
+• ✅ Valores null
+• ✅ Estructuras anidadas
+• ✅ Manejo detallado de errores</pre>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         let examples = [];
@@ -430,8 +153,15 @@
 
         async function loadExamples() {
             try {
+                console.log('Cargando ejemplos...');
                 const response = await fetch('/api/examples');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Ejemplos cargados:', data);
                 examples = data;
                 renderExamples();
             } catch (error) {
@@ -444,64 +174,105 @@
             const grid = document.getElementById('examplesGrid');
             grid.innerHTML = '';
 
-            if (examples.ejemplos) {
-                examples.ejemplos.slice(0, 6).forEach((example, index) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'example-btn';
-                    btn.innerHTML = `<strong>${example.nombre}</strong>`;
-                    btn.onclick = () => setExample(example.json);
-                    grid.appendChild(btn);
-                });
+            let examplesList = [];
+            
+            // Verificar diferentes estructuras de respuesta
+            if (examples.ejemplos && Array.isArray(examples.ejemplos)) {
+                examplesList = examples.ejemplos;
+            } else if (Array.isArray(examples)) {
+                examplesList = examples;
+            } else {
+                console.log('Estructura de ejemplos no reconocida:', examples);
+                renderDefaultExamples();
+                return;
             }
+
+            console.log('Renderizando ejemplos:', examplesList);
+
+            if (examplesList.length === 0) {
+                renderDefaultExamples();
+                return;
+            }
+
+            examplesList.slice(0, 6).forEach((example, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-2';
+                
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-primary btn-sm w-100';
+                btn.innerHTML = `<small>${example.nombre || example.name || `Ejemplo ${index + 1}`}</small>`;
+                btn.onclick = () => {
+                    console.log('Cargando ejemplo:', example);
+                    setExample(example.json);
+                };
+                
+                col.appendChild(btn);
+                grid.appendChild(col);
+            });
         }
 
         function renderDefaultExamples() {
+            console.log('Renderizando ejemplos por defecto');
             const defaultExamples = [
                 { nombre: 'Objeto Simple', json: '{"name": "Juan", "age": 30}' },
                 { nombre: 'Array', json: '["a", "b", "c"]' },
                 { nombre: 'Anidado', json: '{"user": {"name": "Ana"}}' },
-                { nombre: 'Mixto', json: '{"str": "texto", "num": 42, "bool": true}' }
+                { nombre: 'Mixto', json: '{"str": "texto", "num": 42, "bool": true}' },
+                { nombre: 'Con null', json: '{"valor": null, "activo": false}' },
+                { nombre: 'Array Objetos', json: '[{"id": 1}, {"id": 2}]' }
             ];
 
             const grid = document.getElementById('examplesGrid');
             grid.innerHTML = '';
 
             defaultExamples.forEach(example => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-2';
+                
                 const btn = document.createElement('button');
-                btn.className = 'example-btn';
-                btn.innerHTML = `<strong>${example.nombre}</strong>`;
-                btn.onclick = () => setExample(example.json);
-                grid.appendChild(btn);
+                btn.className = 'btn btn-outline-primary btn-sm w-100';
+                btn.innerHTML = `<small>${example.nombre}</small>`;
+                btn.onclick = () => {
+                    console.log('Cargando ejemplo por defecto:', example);
+                    setExample(example.json);
+                };
+                
+                col.appendChild(btn);
+                grid.appendChild(col);
             });
         }
 
         function setExample(jsonString) {
+            console.log('Estableciendo ejemplo:', jsonString);
             document.getElementById('jsonInput').value = jsonString;
             updateStats();
             // Auto-parsear después de un breve delay
-            setTimeout(() => parseJSON(), 300);
+            setTimeout(() => parseJSON(), 500);
         }
 
         function clearInput() {
             document.getElementById('jsonInput').value = '';
-            document.getElementById('resultContent').textContent = 'Área limpiada. Ingresa un nuevo JSON para parsear.';
-            document.getElementById('resultContainer').className = 'result-container';
-            document.getElementById('statusIndicator').className = 'status-indicator status-idle';
-            document.getElementById('statusIndicator').textContent = '⏳ Esperando entrada...';
+            document.getElementById('resultContent').innerHTML = 'Área limpiada. Ingresa un nuevo JSON para parsear.';
+            document.getElementById('resultContainer').className = 'card';
+            updateStatus('info', '<i class="fas fa-clock"></i> Esperando entrada...');
             updateStats();
         }
 
         function formatJSON() {
             const input = document.getElementById('jsonInput').value.trim();
-            if (!input) return;
+            if (!input) {
+                updateStatus('warning', '<i class="fas fa-exclamation-triangle"></i> No hay contenido para formatear');
+                return;
+            }
 
             try {
                 const parsed = JSON.parse(input);
                 const formatted = JSON.stringify(parsed, null, 2);
                 document.getElementById('jsonInput').value = formatted;
                 updateStats();
+                updateStatus('success', '<i class="fas fa-check"></i> JSON formateado correctamente');
             } catch (error) {
-                updateStatus('error', '❌ No se puede formatear: JSON inválido');
+                updateStatus('danger', '<i class="fas fa-times"></i> No se puede formatear: JSON inválido');
             }
         }
 
@@ -509,15 +280,16 @@
             const input = document.getElementById('jsonInput').value.trim();
             
             if (!input) {
-                updateStatus('error', '❌ Por favor ingresa un JSON');
+                updateStatus('warning', '<i class="fas fa-exclamation-triangle"></i> Por favor ingresa un JSON');
                 return;
             }
 
             // Mostrar estado de carga
-            updateStatus('loading', '⏳ Parseando...');
-            document.body.classList.add('loading');
+            updateStatus('info', '<i class="fas fa-spinner fa-spin"></i> Parseando...');
 
             try {
+                console.log('Enviando JSON para parsear:', input);
+                
                 const response = await fetch('/api/parse', {
                     method: 'POST',
                     headers: {
@@ -526,7 +298,12 @@
                     body: JSON.stringify({ json: input })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
+                console.log('Resultado del parseo:', result);
                 
                 if (result.success) {
                     displaySuccess(result.result);
@@ -534,39 +311,59 @@
                     displayError(result.error);
                 }
             } catch (error) {
+                console.error('Error en parseJSON:', error);
                 displayError('Error de conexión: ' + error.message);
-            } finally {
-                document.body.classList.remove('loading');
             }
         }
 
         function displaySuccess(result) {
-            updateStatus('success', '✅ JSON parseado exitosamente');
+            updateStatus('success', '<i class="fas fa-check"></i> JSON parseado exitosamente');
             
             const container = document.getElementById('resultContainer');
             const content = document.getElementById('resultContent');
             
-            container.className = 'result-container result-success';
+            container.className = 'card border-success';
             
             // Formatear el resultado de manera legible
             const formattedResult = formatGoValue(result, 0);
-            content.innerHTML = `<div class="success-message">✅ Parseo exitoso!</div>\n\n<strong>Resultado (estructura Go):</strong>\n${formattedResult}\n\n<strong>JSON formateado:</strong>\n${JSON.stringify(result, null, 2)}`;
+            content.innerHTML = `<div class="text-success fw-bold mb-3">✅ Parseo exitoso!</div>
+
+<strong>Resultado (estructura Go):</strong>
+${formattedResult}
+
+<strong>JSON formateado:</strong>
+${JSON.stringify(result, null, 2)}`;
         }
 
         function displayError(error) {
-            updateStatus('error', '❌ Error en el parseo');
+            updateStatus('danger', '<i class="fas fa-times"></i> Error en el parseo');
             
             const container = document.getElementById('resultContainer');
             const content = document.getElementById('resultContent');
             
-            container.className = 'result-container result-error';
-            content.innerHTML = `<div class="error-message">❌ Error de parseo:</div>\n\n${error}\n\n<strong>Consejos para corregir:</strong>\n• Verifica que todas las llaves {} y corchetes [] estén balanceados\n• Asegúrate de que las cadenas estén entre comillas dobles\n• No uses comas adicionales al final de objetos o arrays\n• Verifica la sintaxis de números y valores booleanos`;
+            container.className = 'card border-danger';
+            content.innerHTML = `<div class="text-danger fw-bold mb-3">❌ Error de parseo:</div>
+
+${error}
+
+<strong>Consejos para corregir:</strong>
+• Verifica que todas las llaves {} y corchetes [] estén balanceados
+• Asegúrate de que las cadenas estén entre comillas dobles
+• No uses comas adicionales al final de objetos o arrays
+• Verifica la sintaxis de números y valores booleanos`;
         }
 
         function updateStatus(type, message) {
             const indicator = document.getElementById('statusIndicator');
-            indicator.className = `status-indicator status-${type}`;
-            indicator.textContent = message;
+            const alertClasses = {
+                'info': 'alert-info',
+                'success': 'alert-success', 
+                'warning': 'alert-warning',
+                'danger': 'alert-danger'
+            };
+            
+            indicator.className = `alert ${alertClasses[type]} mb-3`;
+            indicator.innerHTML = message;
         }
 
         function formatGoValue(value, indent = 0) {

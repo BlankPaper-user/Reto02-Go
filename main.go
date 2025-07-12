@@ -28,8 +28,15 @@ func main() {
 	// Endpoint para obtener ejemplos
 	http.HandleFunc("/api/examples", examplesHandler)
 
-	fmt.Println("Servidor iniciado en http://localhost:8080")
-	fmt.Println("Presiona Ctrl+C para detener")
+	fmt.Println("🚀 Servidor del Parser JSON iniciado")
+	fmt.Println("📁 Sirviendo archivos desde: ./static/")
+	fmt.Println("🌐 Accede a: http://localhost:8080")
+	fmt.Println("🔧 API endpoints:")
+	fmt.Println("   POST /api/parse    - Parsear JSON")
+	fmt.Println("   GET  /api/examples - Obtener ejemplos")
+	fmt.Println("⏹️  Presiona Ctrl+C para detener")
+	fmt.Println(strings.Repeat("-", 50))
+	
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -95,6 +102,10 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
+	if r.Method == "OPTIONS" {
+		return
+	}
+
 	examples := map[string]interface{}{
 		"ejemplos": []map[string]interface{}{
 			{
@@ -102,7 +113,7 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"json":   `{"name": "Juan", "age": 30, "active": true}`,
 			},
 			{
-				"nombre": "Array de strings",
+				"nombre": "Array de strings", 
 				"json":   `["manzana", "plátano", "cereza"]`,
 			},
 			{
@@ -114,12 +125,20 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"json":   `[{"id": 1, "nombre": "Producto A"}, {"id": 2, "nombre": "Producto B"}]`,
 			},
 			{
-				"nombre": "Tipos de datos mixtos",
+				"nombre": "Tipos mixtos",
 				"json":   `{"string": "texto", "number": 42.5, "boolean": true, "null": null, "array": [1, 2, 3]}`,
 			},
 			{
 				"nombre": "JSON complejo",
 				"json":   `{"empresa": "TechCorp", "empleados": [{"nombre": "Carlos", "departamento": "IT", "salario": 75000}, {"nombre": "María", "departamento": "Marketing", "salario": 65000}], "fundada": 2010, "activa": true}`,
+			},
+			{
+				"nombre": "Con caracteres escape",
+				"json":   `{"mensaje": "Hola\nMundo", "ruta": "C:\\Users\\Juan", "comillas": "Dice \"Hola\""}`,
+			},
+			{
+				"nombre": "Números especiales",
+				"json":   `{"entero": 42, "decimal": 3.14159, "negativo": -123, "cientifico": 1.5e10}`,
 			},
 		},
 		"ejemplos_invalidos": []map[string]interface{}{
@@ -139,8 +158,24 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"nombre": "Coma extra en array",
 				"json":   `[1, 2,]`,
 			},
+			{
+				"nombre": "String no cerrado",
+				"json":   `{"mensaje": "hola mundo`,
+			},
+			{
+				"nombre": "Caracteres extra",
+				"json":   `{"a": 1} {"b": 2}`,
+			},
 		},
 	}
 
-	json.NewEncoder(w).Encode(examples)
+	// Log para debugging
+	fmt.Printf("Enviando ejemplos: %d válidos, %d inválidos\n", 
+		len(examples["ejemplos"].([]map[string]interface{})),
+		len(examples["ejemplos_invalidos"].([]map[string]interface{})))
+
+	if err := json.NewEncoder(w).Encode(examples); err != nil {
+		http.Error(w, "Error al codificar ejemplos", http.StatusInternalServerError)
+		return
+	}
 }
