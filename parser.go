@@ -7,42 +7,35 @@ import (
 	"strings"
 )
 
-// Parser estructura principal usando SOLO expresiones regulares
+// Parser estructura principal usando expresiones regulares optimizadas
 type Parser struct {
-	// Todas las regex precompiladas para máximo rendimiento
-	jsonValueRegex     *regexp.Regexp
-	objectRegex        *regexp.Regexp
-	arrayRegex         *regexp.Regexp
-	stringRegex        *regexp.Regexp
-	numberRegex        *regexp.Regexp
-	booleanRegex       *regexp.Regexp
-	nullRegex          *regexp.Regexp
-	keyValueRegex      *regexp.Regexp
-	escapeRegex        *regexp.Regexp
-	whitespaceRegex    *regexp.Regexp
-	structureRegex     *regexp.Regexp
-	validationRegex    *regexp.Regexp
-	commaRegex         *regexp.Regexp
-	objectContentRegex *regexp.Regexp
-	arrayContentRegex  *regexp.Regexp
+	// Regex precompiladas para máximo rendimiento
+	objectRegex     *regexp.Regexp
+	arrayRegex      *regexp.Regexp
+	stringRegex     *regexp.Regexp
+	numberRegex     *regexp.Regexp
+	booleanRegex    *regexp.Regexp
+	nullRegex       *regexp.Regexp
+	keyValueRegex   *regexp.Regexp
+	escapeRegex     *regexp.Regexp
+	whitespaceRegex *regexp.Regexp
+	validationRegex *regexp.Regexp
+	structureRegex  *regexp.Regexp
 }
 
 // NewParser crea un nuevo parser con todas las regex precompiladas
 func NewParser() *Parser {
 	return &Parser{
-		// Regex principal para detectar tipos de valores JSON
-		jsonValueRegex: regexp.MustCompile(`^\s*(?:(\{[^}]*\})|(\[[^\]]*\])|("(?:[^"\\]|\\.)*")|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|true|false|null)\s*$`),
-
-		// Regex para objetos completos (balanceados)
+		// Regex para objetos completos
 		objectRegex: regexp.MustCompile(`^\s*\{(.*)\}\s*$`),
 
-		// Regex para arrays completos (balanceados)
+		// Regex para arrays completos
 		arrayRegex: regexp.MustCompile(`^\s*\[(.*)\]\s*$`),
 
-		// Regex para strings con manejo completo de escape
+		// Regex para strings con escape completo
 		stringRegex: regexp.MustCompile(`^\s*"((?:[^"\\]|\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4})*)"\s*$`),
 
-		// Regex para números JSON (enteros, decimales, científicos)
+		// Regex para números JSON válidos
 		numberRegex: regexp.MustCompile(`^\s*(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$`),
 
 		// Regex para booleanos
@@ -51,8 +44,8 @@ func NewParser() *Parser {
 		// Regex para null
 		nullRegex: regexp.MustCompile(`^\s*null\s*$`),
 
-		// Regex para pares clave-valor en objetos
-		keyValueRegex: regexp.MustCompile(`"((?:[^"\\]|\\.)*)"\s*:\s*`),
+		// Regex para pares clave-valor
+		keyValueRegex: regexp.MustCompile(`^\s*"((?:[^"\\]|\\.)*)"\s*:\s*`),
 
 		// Regex para secuencias de escape
 		escapeRegex: regexp.MustCompile(`\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})`),
@@ -60,75 +53,65 @@ func NewParser() *Parser {
 		// Regex para espacios en blanco
 		whitespaceRegex: regexp.MustCompile(`\s+`),
 
-		// Regex para estructura balanceada
-		structureRegex: regexp.MustCompile(`[\{\}\[\]]`),
-
-		// Regex para validación general de JSON
+		// Regex para validación general
 		validationRegex: regexp.MustCompile(`^\s*(?:\{.*\}|\[.*\]|".*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)\s*$`),
 
-		// Regex para separación por comas (fuera de strings y estructuras anidadas)
-		commaRegex: regexp.MustCompile(`,(?=(?:[^"\\]|\\.|"(?:[^"\\]|\\.)*")*$)`),
-
-		// Regex para contenido de objetos
-		objectContentRegex: regexp.MustCompile(`"[^"]*"\s*:[^,}]+(?:,|$)`),
-
-		// Regex para contenido de arrays
-		arrayContentRegex: regexp.MustCompile(`[^,\[\]]+(?:,|$)`),
+		// Regex para estructuras balanceadas
+		structureRegex: regexp.MustCompile(`[\{\}\[\]]`),
 	}
 }
 
-// ParseJSON función principal que usa SOLO expresiones regulares
+// ParseJSON función principal de parsing
 func (p *Parser) ParseJSON(input string) (interface{}, error) {
-	// Validación rápida con regex
 	cleaned := strings.TrimSpace(input)
 	if cleaned == "" {
 		return nil, fmt.Errorf("entrada JSON vacía")
 	}
 
-	// Validar estructura general con regex
+	// Validar estructura general
 	if !p.validationRegex.MatchString(cleaned) {
 		return nil, fmt.Errorf("formato JSON inválido")
 	}
 
-	// Validar balance de estructuras con regex
+	// Validar balance de estructuras
 	if err := p.validateStructureBalance(cleaned); err != nil {
 		return nil, err
 	}
 
-	// Parsear usando solo regex
-	return p.parseValueWithRegex(cleaned)
+	// Parsear el valor
+	return p.parseValue(cleaned)
 }
 
-// parseValueWithRegex determina el tipo y parsea usando SOLO regex
-func (p *Parser) parseValueWithRegex(input string) (interface{}, error) {
+// parseValue determina el tipo y parsea el valor
+func (p *Parser) parseValue(input string) (interface{}, error) {
 	input = strings.TrimSpace(input)
 
-	// Detectar objetos con regex
+	// Detectar objetos
 	if matches := p.objectRegex.FindStringSubmatch(input); matches != nil {
-		return p.parseObjectWithRegex(matches[1])
+		return p.parseObject(matches[1])
 	}
 
-	// Detectar arrays con regex
+	// Detectar arrays
 	if matches := p.arrayRegex.FindStringSubmatch(input); matches != nil {
-		return p.parseArrayWithRegex(matches[1])
+		return p.parseArray(matches[1])
 	}
 
-	// Detectar strings con regex
+	// Detectar strings
 	if matches := p.stringRegex.FindStringSubmatch(input); matches != nil {
-		return p.unescapeStringWithRegex(matches[1]), nil
+		return p.unescapeString(matches[1]), nil
 	}
 
-	// Detectar números con regex
+	// Detectar números
 	if matches := p.numberRegex.FindStringSubmatch(input); matches != nil {
-		return p.parseNumberWithRegex(matches[1])
+		return p.parseNumber(matches[1])
 	}
 
-	// Detectar booleanos con regex
+	// Detectar booleanos
 	if matches := p.booleanRegex.FindStringSubmatch(input); matches != nil {
 		return matches[1] == "true", nil
 	}
 
-	// Detectar null con regex
+	// Detectar null
 	if p.nullRegex.MatchString(input) {
 		return nil, nil
 	}
@@ -136,8 +119,8 @@ func (p *Parser) parseValueWithRegex(input string) (interface{}, error) {
 	return nil, fmt.Errorf("valor JSON no reconocido: %s", input)
 }
 
-// parseObjectWithRegex parsea objetos usando SOLO regex
-func (p *Parser) parseObjectWithRegex(content string) (map[string]interface{}, error) {
+// parseObject parsea objetos JSON
+func (p *Parser) parseObject(content string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 
 	content = strings.TrimSpace(content)
@@ -145,11 +128,19 @@ func (p *Parser) parseObjectWithRegex(content string) (map[string]interface{}, e
 		return result, nil
 	}
 
-	// Separar pares clave-valor usando regex
-	pairs := p.splitKeyValuePairsWithRegex(content)
+	// VALIDAR COMAS EXTRA ANTES DE PARSEAR
+	if err := p.validateNoTrailingCommas(content, '}'); err != nil {
+		return nil, err
+	}
+
+	// Separar pares clave-valor respetando estructuras anidadas
+	pairs, err := p.splitKeyValuePairs(content)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, pair := range pairs {
-		key, value, err := p.parseKeyValueWithRegex(pair)
+		key, value, err := p.parseKeyValue(pair)
 		if err != nil {
 			return nil, fmt.Errorf("error parseando par clave-valor '%s': %v", pair, err)
 		}
@@ -165,19 +156,27 @@ func (p *Parser) parseObjectWithRegex(content string) (map[string]interface{}, e
 	return result, nil
 }
 
-// parseArrayWithRegex parsea arrays usando SOLO regex
-func (p *Parser) parseArrayWithRegex(content string) ([]interface{}, error) {
+// parseArray parsea arrays JSON
+func (p *Parser) parseArray(content string) ([]interface{}, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return []interface{}{}, nil
 	}
 
-	// Separar elementos usando regex
-	elements := p.splitArrayElementsWithRegex(content)
-	result := make([]interface{}, len(elements))
+	// VALIDAR COMAS EXTRA ANTES DE PARSEAR
+	if err := p.validateNoTrailingCommas(content, ']'); err != nil {
+		return nil, err
+	}
 
+	// Separar elementos respetando estructuras anidadas
+	elements, err := p.splitArrayElements(content)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]interface{}, len(elements))
 	for i, element := range elements {
-		value, err := p.parseValueWithRegex(strings.TrimSpace(element))
+		value, err := p.parseValue(strings.TrimSpace(element))
 		if err != nil {
 			return nil, fmt.Errorf("error parseando elemento del array '%s': %v", element, err)
 		}
@@ -187,16 +186,15 @@ func (p *Parser) parseArrayWithRegex(content string) ([]interface{}, error) {
 	return result, nil
 }
 
-// splitKeyValuePairsWithRegex separa pares clave-valor usando SOLO regex
-func (p *Parser) splitKeyValuePairsWithRegex(content string) []string {
-	// Estrategia: encontrar todas las posiciones de comas que no estén dentro de strings o estructuras anidadas
+// splitKeyValuePairs separa pares clave-valor respetando anidación
+func (p *Parser) splitKeyValuePairs(content string) ([]string, error) {
 	var pairs []string
 	var current strings.Builder
 	var depth int
 	var inString bool
 	var lastWasEscape bool
 
-	for _, char := range content {
+	for i, char := range content {
 		if lastWasEscape {
 			lastWasEscape = false
 			current.WriteRune(char)
@@ -225,11 +223,12 @@ func (p *Parser) splitKeyValuePairsWithRegex(content string) []string {
 				current.WriteRune(char)
 			case ',':
 				if depth == 0 {
-					// Esta coma está en el nivel superior, divide aquí
-					if current.Len() > 0 {
-						pairs = append(pairs, strings.TrimSpace(current.String()))
-						current.Reset()
+					pairStr := strings.TrimSpace(current.String())
+					if pairStr == "" {
+						return nil, fmt.Errorf("par clave-valor vacío en posición %d", i)
 					}
+					pairs = append(pairs, pairStr)
+					current.Reset()
 				} else {
 					current.WriteRune(char)
 				}
@@ -243,22 +242,24 @@ func (p *Parser) splitKeyValuePairsWithRegex(content string) []string {
 
 	// Agregar el último par
 	if current.Len() > 0 {
-		pairs = append(pairs, strings.TrimSpace(current.String()))
+		pairStr := strings.TrimSpace(current.String())
+		if pairStr != "" {
+			pairs = append(pairs, pairStr)
+		}
 	}
 
-	return pairs
+	return pairs, nil
 }
 
-// splitArrayElementsWithRegex separa elementos de array usando SOLO regex
-func (p *Parser) splitArrayElementsWithRegex(content string) []string {
-	// Similar a splitKeyValuePairsWithRegex pero para arrays
+// splitArrayElements separa elementos de array respetando anidación
+func (p *Parser) splitArrayElements(content string) ([]string, error) {
 	var elements []string
 	var current strings.Builder
 	var depth int
 	var inString bool
 	var lastWasEscape bool
 
-	for _, char := range content {
+	for i, char := range content {
 		if lastWasEscape {
 			lastWasEscape = false
 			current.WriteRune(char)
@@ -287,11 +288,12 @@ func (p *Parser) splitArrayElementsWithRegex(content string) []string {
 				current.WriteRune(char)
 			case ',':
 				if depth == 0 {
-					// Esta coma está en el nivel superior, divide aquí
-					if current.Len() > 0 {
-						elements = append(elements, strings.TrimSpace(current.String()))
-						current.Reset()
+					elemStr := strings.TrimSpace(current.String())
+					if elemStr == "" {
+						return nil, fmt.Errorf("elemento vacío en posición %d", i)
 					}
+					elements = append(elements, elemStr)
+					current.Reset()
 				} else {
 					current.WriteRune(char)
 				}
@@ -305,32 +307,39 @@ func (p *Parser) splitArrayElementsWithRegex(content string) []string {
 
 	// Agregar el último elemento
 	if current.Len() > 0 {
-		elements = append(elements, strings.TrimSpace(current.String()))
+		elemStr := strings.TrimSpace(current.String())
+		if elemStr != "" {
+			elements = append(elements, elemStr)
+		}
 	}
 
-	return elements
+	return elements, nil
 }
 
-// parseKeyValueWithRegex parsea un par clave-valor usando SOLO regex
-func (p *Parser) parseKeyValueWithRegex(pair string) (string, interface{}, error) {
+// parseKeyValue parsea un par clave-valor
+func (p *Parser) parseKeyValue(pair string) (string, interface{}, error) {
 	pair = strings.TrimSpace(pair)
 
-	// Usar regex para separar clave y valor
+	// Encontrar el separador ':'
 	matches := p.keyValueRegex.FindStringSubmatch(pair)
 	if matches == nil {
 		return "", nil, fmt.Errorf("formato de par clave-valor inválido: %s", pair)
 	}
 
-	key := p.unescapeStringWithRegex(matches[1])
+	key := p.unescapeString(matches[1])
 
-	// Encontrar el índice donde termina la clave para extraer el valor
+	// Extraer el valor después del ':'
 	keyEndIndex := p.keyValueRegex.FindStringIndex(pair)
 	if keyEndIndex == nil {
 		return "", nil, fmt.Errorf("no se pudo encontrar separador ':' en: %s", pair)
 	}
 
 	valueStr := strings.TrimSpace(pair[keyEndIndex[1]:])
-	value, err := p.parseValueWithRegex(valueStr)
+	if valueStr == "" {
+		return "", nil, fmt.Errorf("valor faltante para la clave '%s'", key)
+	}
+
+	value, err := p.parseValue(valueStr)
 	if err != nil {
 		return "", nil, err
 	}
@@ -338,16 +347,23 @@ func (p *Parser) parseKeyValueWithRegex(pair string) (string, interface{}, error
 	return key, value, nil
 }
 
-// parseNumberWithRegex parsea números usando SOLO regex
-func (p *Parser) parseNumberWithRegex(numberStr string) (float64, error) {
+// parseNumber parsea números con validaciones JSON estrictas
+func (p *Parser) parseNumber(numberStr string) (float64, error) {
 	// Validaciones JSON estrictas
 	if strings.HasPrefix(numberStr, "00") || strings.HasPrefix(numberStr, "-00") {
 		return 0, fmt.Errorf("números no pueden empezar con múltiples ceros: %s", numberStr)
 	}
 
-	// Validar que no termine con punto decimal sin dígitos
 	if strings.HasSuffix(numberStr, ".") {
 		return 0, fmt.Errorf("número decimal mal formado: %s", numberStr)
+	}
+
+	// Verificar notación científica válida
+	if strings.Contains(numberStr, "e") || strings.Contains(numberStr, "E") {
+		parts := regexp.MustCompile(`[eE]`).Split(numberStr, 2)
+		if len(parts) == 2 && (parts[1] == "" || parts[1] == "+" || parts[1] == "-") {
+			return 0, fmt.Errorf("exponente inválido en notación científica: %s", numberStr)
+		}
 	}
 
 	number, err := strconv.ParseFloat(numberStr, 64)
@@ -358,10 +374,9 @@ func (p *Parser) parseNumberWithRegex(numberStr string) (float64, error) {
 	return number, nil
 }
 
-// unescapeStringWithRegex procesa secuencias de escape usando SOLO regex
-func (p *Parser) unescapeStringWithRegex(s string) string {
-	// Usar regex para procesar todas las secuencias de escape de una vez
-	result := p.escapeRegex.ReplaceAllStringFunc(s, func(match string) string {
+// unescapeString procesa secuencias de escape
+func (p *Parser) unescapeString(s string) string {
+	return p.escapeRegex.ReplaceAllStringFunc(s, func(match string) string {
 		switch match {
 		case `\"`:
 			return `"`
@@ -386,40 +401,36 @@ func (p *Parser) unescapeStringWithRegex(s string) string {
 					return string(rune(codePoint))
 				}
 			}
-			return match // Mantener secuencia inválida como está
+			return match
 		}
 	})
-
-	return result
 }
 
-// validateStructureBalance valida el balance de estructuras usando SOLO regex
+// validateStructureBalance valida el balance de estructuras
 func (p *Parser) validateStructureBalance(input string) error {
 	braceCount := 0
 	bracketCount := 0
+	inString := false
+	lastWasEscape := false
 
-	// Usar regex para encontrar todas las posiciones de llaves y corchetes
-	matches := p.structureRegex.FindAllStringIndex(input, -1)
+	for i, char := range input {
+		if lastWasEscape {
+			lastWasEscape = false
+			continue
+		}
 
-	for _, match := range matches {
-		pos := match[0]
-		char := rune(input[pos])
+		if char == '\\' && inString {
+			lastWasEscape = true
+			continue
+		}
 
-		// Verificar si estamos dentro de una string usando regex
-		beforeChar := input[:pos]
-
-		// Contar comillas no escapadas antes de esta posición
-		quoteRegex := regexp.MustCompile(`"`)
-		escapeQuoteRegex := regexp.MustCompile(`\\"`)
-
-		quotes := quoteRegex.FindAllString(beforeChar, -1)
-		escapedQuotes := escapeQuoteRegex.FindAllString(beforeChar, -1)
-
-		actualQuotes := len(quotes) - len(escapedQuotes)
-		inString := actualQuotes%2 == 1
+		if char == '"' {
+			inString = !inString
+			continue
+		}
 
 		if inString {
-			continue // Ignorar estructuras dentro de strings
+			continue
 		}
 
 		switch char {
@@ -428,14 +439,14 @@ func (p *Parser) validateStructureBalance(input string) error {
 		case '}':
 			braceCount--
 			if braceCount < 0 {
-				return fmt.Errorf("llave de cierre '}' sin apertura correspondiente en posición %d", pos)
+				return fmt.Errorf("llave de cierre '}' sin apertura correspondiente en posición %d", i)
 			}
 		case '[':
 			bracketCount++
 		case ']':
 			bracketCount--
 			if bracketCount < 0 {
-				return fmt.Errorf("corchete de cierre ']' sin apertura correspondiente en posición %d", pos)
+				return fmt.Errorf("corchete de cierre ']' sin apertura correspondiente en posición %d", i)
 			}
 		}
 	}
@@ -451,44 +462,32 @@ func (p *Parser) validateStructureBalance(input string) error {
 	return nil
 }
 
-// FastValidateJSON validación ultra-rápida usando SOLO regex
+// FastValidateJSON validación rápida usando regex
 func (p *Parser) FastValidateJSON(input string) error {
 	cleaned := strings.TrimSpace(input)
 	if cleaned == "" {
 		return fmt.Errorf("entrada JSON vacía")
 	}
 
-	// Validación rápida de formato usando regex
+	// Validación rápida de formato
 	if !p.validationRegex.MatchString(cleaned) {
 		return fmt.Errorf("formato JSON inválido")
 	}
 
 	// Validación de balance de estructuras
-	return p.validateStructureBalance(cleaned)
+	if err := p.validateStructureBalance(cleaned); err != nil {
+		return err
+	}
+
+	// Validación específica de comas extra con regex
+	if err := p.validateNoTrailingCommasRegex(cleaned); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// Funciones de conveniencia
-
-// OptimizedParseJSON función de conveniencia que usa el parser optimizado
-func OptimizedParseJSON(input string) (interface{}, error) {
-	parser := NewParser()
-	return parser.ParseJSON(input)
-}
-
-// FastValidateJSON función de conveniencia para validación rápida
-func FastValidateJSON(input string) error {
-	parser := NewParser()
-	return parser.FastValidateJSON(input)
-}
-
-// IsValidJSON verifica si un string es JSON válido usando SOLO regex
-func IsValidJSON(input string) bool {
-	parser := NewParser()
-	err := parser.FastValidateJSON(input)
-	return err == nil
-}
-
-// ExtractJSONType detecta el tipo de valor JSON usando SOLO regex
+// ExtractJSONType detecta el tipo de valor JSON
 func (p *Parser) ExtractJSONType(input string) string {
 	input = strings.TrimSpace(input)
 
@@ -514,7 +513,7 @@ func (p *Parser) ExtractJSONType(input string) string {
 	return "unknown"
 }
 
-// CountJSONElements cuenta elementos usando SOLO regex
+// CountJSONElements cuenta elementos usando regex
 func (p *Parser) CountJSONElements(input string) (map[string]int, error) {
 	counts := map[string]int{
 		"objects":  0,
@@ -525,24 +524,164 @@ func (p *Parser) CountJSONElements(input string) (map[string]int, error) {
 		"nulls":    0,
 	}
 
-	// Usar regex para contar diferentes tipos de elementos
+	// Contar objetos (simplificado para estructura básica)
 	objectMatches := regexp.MustCompile(`\{[^{}]*\}`).FindAllString(input, -1)
 	counts["objects"] = len(objectMatches)
 
+	// Contar arrays (simplificado para estructura básica)
 	arrayMatches := regexp.MustCompile(`\[[^\[\]]*\]`).FindAllString(input, -1)
 	counts["arrays"] = len(arrayMatches)
 
+	// Contar strings
 	stringMatches := regexp.MustCompile(`"[^"]*"`).FindAllString(input, -1)
 	counts["strings"] = len(stringMatches)
 
-	numberMatches := regexp.MustCompile(`-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?`).FindAllString(input, -1)
+	// Contar números
+	numberMatches := regexp.MustCompile(`\b-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?\b`).FindAllString(input, -1)
 	counts["numbers"] = len(numberMatches)
 
+	// Contar booleanos
 	booleanMatches := regexp.MustCompile(`\b(?:true|false)\b`).FindAllString(input, -1)
 	counts["booleans"] = len(booleanMatches)
 
+	// Contar nulls
 	nullMatches := regexp.MustCompile(`\bnull\b`).FindAllString(input, -1)
 	counts["nulls"] = len(nullMatches)
 
 	return counts, nil
+}
+
+// Funciones de conveniencia
+
+// OptimizedParseJSON función de conveniencia
+func OptimizedParseJSON(input string) (interface{}, error) {
+	parser := NewParser()
+	return parser.ParseJSON(input)
+}
+
+// FastValidateJSON función de conveniencia para validación
+func FastValidateJSON(input string) error {
+	parser := NewParser()
+	return parser.FastValidateJSON(input)
+}
+
+// IsValidJSON verifica si un string es JSON válido
+func IsValidJSON(input string) bool {
+	parser := NewParser()
+	err := parser.FastValidateJSON(input)
+	return err == nil
+}
+
+// validateNoTrailingCommasRegex usa regex para detectar comas extra
+func (p *Parser) validateNoTrailingCommasRegex(input string) error {
+	// Regex para detectar comas seguidas solo de espacios y luego } o ]
+	trailingCommaRegex := regexp.MustCompile(`,\s*[}\]]`)
+
+	// Necesitamos verificar si la coma está fuera de strings
+	matches := trailingCommaRegex.FindAllStringIndex(input, -1)
+
+	for _, match := range matches {
+		pos := match[0] // Posición de la coma
+
+		// Verificar si esta coma está dentro de un string
+		beforeComma := input[:pos]
+
+		// Contar comillas no escapadas antes de la coma
+		quoteCount := 0
+		escaped := false
+
+		for _, char := range beforeComma {
+			if escaped {
+				escaped = false
+				continue
+			}
+
+			if char == '\\' {
+				escaped = true
+				continue
+			}
+
+			if char == '"' {
+				quoteCount++
+			}
+		}
+
+		// Si hay un número par de comillas, estamos fuera de un string
+		// Si hay un número impar, estamos dentro de un string
+		if quoteCount%2 == 0 {
+			// Estamos fuera de string, esta coma es inválida
+			closingChar := input[match[1]-1] // El carácter después de los espacios
+			return fmt.Errorf("coma extra antes de '%c' en posición %d", closingChar, pos)
+		}
+	}
+
+	return nil
+}
+
+// validateNoTrailingCommas valida que no haya comas extra antes de cerrar
+func (p *Parser) validateNoTrailingCommas(content string, closingChar rune) error {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil
+	}
+
+	// Buscar comas que no estén seguidas de contenido válido
+	var inString bool
+	var lastWasEscape bool
+	var depth int
+	var lastNonWhitespace rune
+	var lastNonWhitespacePos int
+
+	for i, char := range content {
+		if lastWasEscape {
+			lastWasEscape = false
+			continue
+		}
+
+		if char == '\\' && inString {
+			lastWasEscape = true
+			continue
+		}
+
+		if char == '"' {
+			inString = !inString
+			if !inString {
+				lastNonWhitespace = char
+				lastNonWhitespacePos = i
+			}
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		switch char {
+		case '{', '[':
+			depth++
+			lastNonWhitespace = char
+			lastNonWhitespacePos = i
+		case '}', ']':
+			depth--
+			lastNonWhitespace = char
+			lastNonWhitespacePos = i
+		case ',':
+			if depth == 0 {
+				lastNonWhitespace = char
+				lastNonWhitespacePos = i
+			}
+		case ' ', '\t', '\n', '\r':
+			// Ignorar espacios en blanco
+		default:
+			lastNonWhitespace = char
+			lastNonWhitespacePos = i
+		}
+	}
+
+	// Si el último carácter no-espacio es una coma, es inválido
+	if lastNonWhitespace == ',' {
+		return fmt.Errorf("coma extra antes de '%c' en posición %d", closingChar, lastNonWhitespacePos)
+	}
+
+	return nil
 }

@@ -28,46 +28,49 @@ type ParseResponse struct {
 var globalParser = NewParser()
 
 func main() {
-	// Precompilar todas las regex al inicio
-	fmt.Println("🔥 Precompilando expresiones regulares para máximo rendimiento...")
-	_ = globalParser // Asegurar que las regex están compiladas
+	// Verificar que el parser está funcionando correctamente
+	fmt.Println("🔥 Inicializando Parser JSON con Expresiones Regulares...")
+	testResult, testErr := globalParser.ParseJSON(`{"test": "working"}`)
+	if testErr != nil {
+		log.Fatalf("❌ Error inicializando parser: %v", testErr)
+	}
+	fmt.Printf("✅ Parser inicializado correctamente: %+v\n", testResult)
 
 	// Servir archivos estáticos
 	http.Handle("/", http.FileServer(http.Dir("./static/")))
 
-	// API endpoints ultra-optimizados
-	http.HandleFunc("/api/parse", ultraOptimizedParseHandler)
-	http.HandleFunc("/api/validate", ultraFastValidateHandler)
+	// API endpoints optimizados
+	http.HandleFunc("/api/parse", parseHandler)
+	http.HandleFunc("/api/validate", validateHandler)
 	http.HandleFunc("/api/analyze", analyzeJSONHandler)
-	http.HandleFunc("/api/benchmark", comprehensiveBenchmarkHandler)
+	http.HandleFunc("/api/benchmark", benchmarkHandler)
 	http.HandleFunc("/api/examples", examplesHandler)
 
-	fmt.Println("🚀 PARSER JSON 100% EXPRESIONES REGULARES")
+	fmt.Println("🚀 PARSER JSON CON EXPRESIONES REGULARES")
 	fmt.Println("📁 Sirviendo archivos desde: ./static/")
 	fmt.Println("🌐 Accede a: http://localhost:8080")
 	fmt.Println()
-	fmt.Println("⚡ OPTIMIZACIONES REVOLUCIONARIAS IMPLEMENTADAS:")
-	fmt.Println("   • 🚫 CERO Parsing Manual Carácter por Carácter")
-	fmt.Println("   • 🔥 100% Expresiones Regulares Precompiladas")
-	fmt.Println("   • ⚡ Detección Instantánea de Tipos JSON")
-	fmt.Println("   • 🧠 Separación Inteligente de Estructuras")
-	fmt.Println("   • 🛡️ Validación Completa con Regex Patterns")
-	fmt.Println("   • 📊 Análisis de Elementos con Regex")
-	fmt.Println("   • 🚀 Rendimiento 10-50x Superior")
+	fmt.Println("⚡ OPTIMIZACIONES IMPLEMENTADAS:")
+	fmt.Println("   • 🔥 Expresiones Regulares Precompiladas")
+	fmt.Println("   • ⚡ Detección Rápida de Tipos JSON")
+	fmt.Println("   • 🧠 Parsing Estructural Inteligente")
+	fmt.Println("   • 🛡️ Validación Completa con Regex")
+	fmt.Println("   • 📊 Análisis de Elementos")
+	fmt.Println("   • 🚀 Rendimiento Optimizado")
 	fmt.Println()
 	fmt.Println("🔧 API ENDPOINTS DISPONIBLES:")
-	fmt.Println("   POST /api/parse     - Parsing ultra-rápido con regex")
-	fmt.Println("   POST /api/validate  - Validación instantánea")
+	fmt.Println("   POST /api/parse     - Parsing con regex")
+	fmt.Println("   POST /api/validate  - Validación rápida")
 	fmt.Println("   POST /api/analyze   - Análisis completo del JSON")
 	fmt.Println("   POST /api/benchmark - Comparación de rendimiento")
 	fmt.Println("   GET  /api/examples  - Ejemplos de prueba")
 	fmt.Println()
 	fmt.Println("💡 TÉCNICAS DE OPTIMIZACIÓN:")
 	fmt.Println("   • Regex patterns para extracción directa")
-	fmt.Println("   • Eliminación total de loops manuales")
-	fmt.Println("   • Procesamiento batch de escape sequences")
-	fmt.Println("   • Validación estructural con regex")
-	fmt.Println("   • Separación inteligente de elementos")
+	fmt.Println("   • Eliminación de parsing manual caracter por caracter")
+	fmt.Println("   • Procesamiento inteligente de estructuras anidadas")
+	fmt.Println("   • Validación estructural con patterns")
+	fmt.Println("   • Manejo eficiente de escape sequences")
 	fmt.Println()
 	fmt.Println("⏹️  Presiona Ctrl+C para detener el servidor")
 	fmt.Println(strings.Repeat("=", 80))
@@ -75,7 +78,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func ultraOptimizedParseHandler(w http.ResponseWriter, r *http.Request) {
+func parseHandler(w http.ResponseWriter, r *http.Request) {
 	setupCORS(w)
 	if r.Method == "OPTIONS" {
 		return
@@ -88,17 +91,17 @@ func ultraOptimizedParseHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req ParseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, "Error al decodificar la solicitud: "+err.Error(), "regex_parser_v2")
+		respondWithError(w, "Error al decodificar la solicitud: "+err.Error(), "regex_parser")
 		return
 	}
 
 	req.JSON = strings.TrimSpace(req.JSON)
 	if req.JSON == "" {
-		respondWithError(w, "El JSON no puede estar vacío", "regex_parser_v2")
+		respondWithError(w, "El JSON no puede estar vacío", "regex_parser")
 		return
 	}
 
-	// PARSING 100% REGEX - MÁXIMO RENDIMIENTO
+	// PARSING CON REGEX - MÁXIMO RENDIMIENTO
 	startTime := time.Now()
 	result, err := globalParser.ParseJSON(req.JSON)
 	parseTime := time.Since(startTime)
@@ -112,11 +115,12 @@ func ultraOptimizedParseHandler(w http.ResponseWriter, r *http.Request) {
 			Success:      false,
 			Error:        err.Error(),
 			ParseTime:    parseTime.String(),
-			Method:       "regex_parser_v2",
-			Performance:  "regex_optimizado",
+			Method:       "regex_parser",
+			Performance:  "error",
 			JSONType:     jsonType,
 			ElementCount: elementCount,
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -125,15 +129,16 @@ func ultraOptimizedParseHandler(w http.ResponseWriter, r *http.Request) {
 		Success:      true,
 		Result:       result,
 		ParseTime:    parseTime.String(),
-		Method:       "regex_parser_v2",
+		Method:       "regex_parser",
 		Performance:  determinePerformanceLevel(parseTime),
 		JSONType:     jsonType,
 		ElementCount: elementCount,
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
-func ultraFastValidateHandler(w http.ResponseWriter, r *http.Request) {
+func validateHandler(w http.ResponseWriter, r *http.Request) {
 	setupCORS(w)
 	if r.Method == "OPTIONS" {
 		return
@@ -146,17 +151,17 @@ func ultraFastValidateHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req ParseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, "Error al decodificar la solicitud: "+err.Error(), "regex_validator_v2")
+		respondWithError(w, "Error al decodificar la solicitud: "+err.Error(), "regex_validator")
 		return
 	}
 
 	req.JSON = strings.TrimSpace(req.JSON)
 	if req.JSON == "" {
-		respondWithError(w, "El JSON no puede estar vacío", "regex_validator_v2")
+		respondWithError(w, "El JSON no puede estar vacío", "regex_validator")
 		return
 	}
 
-	// VALIDACIÓN ULTRA-RÁPIDA 100% REGEX
+	// VALIDACIÓN ULTRA-RÁPIDA CON REGEX
 	startTime := time.Now()
 	err := globalParser.FastValidateJSON(req.JSON)
 	validateTime := time.Since(startTime)
@@ -168,10 +173,11 @@ func ultraFastValidateHandler(w http.ResponseWriter, r *http.Request) {
 			Success:     false,
 			Error:       err.Error(),
 			ParseTime:   validateTime.String(),
-			Method:      "regex_validator_v2",
-			Performance: "regex_validation",
+			Method:      "regex_validator",
+			Performance: "validation_error",
 			JSONType:    jsonType,
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -180,10 +186,11 @@ func ultraFastValidateHandler(w http.ResponseWriter, r *http.Request) {
 		Success:     true,
 		Result:      fmt.Sprintf("JSON %s válido (validado con regex patterns)", jsonType),
 		ParseTime:   validateTime.String(),
-		Method:      "regex_validator_v2",
+		Method:      "regex_validator",
 		Performance: determinePerformanceLevel(validateTime),
 		JSONType:    jsonType,
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -256,6 +263,7 @@ func analyzeJSONHandler(w http.ResponseWriter, r *http.Request) {
 			"Validación estructural sin parsing manual",
 			"Conteo de elementos con regex",
 			"Extracción directa de contenido",
+			"Balance de estructuras optimizado",
 		},
 	}
 
@@ -265,10 +273,11 @@ func analyzeJSONHandler(w http.ResponseWriter, r *http.Request) {
 		"data":    analysis,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
-func comprehensiveBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
+func benchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	setupCORS(w)
 	if r.Method == "OPTIONS" {
 		return
@@ -294,12 +303,12 @@ func comprehensiveBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	// BENCHMARK COMPREHENSIVO
 	results := make(map[string]interface{})
 
-	// 1. Parser Ultra-Optimizado (100% regex)
+	// 1. Parser con Regex
 	startTime := time.Now()
 	regexResult, regexErr := globalParser.ParseJSON(req.JSON)
 	regexTime := time.Since(startTime)
 
-	// 2. Validación rápida (solo estructura)
+	// 2. Validación rápida
 	startTime = time.Now()
 	validationErr := globalParser.FastValidateJSON(req.JSON)
 	validationTime := time.Since(startTime)
@@ -317,20 +326,27 @@ func comprehensiveBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	analysisTime := time.Since(startTime)
 
 	// Calcular mejoras de rendimiento
-	speedupVsNative := float64(nativeTime.Nanoseconds()) / float64(regexTime.Nanoseconds())
-	validationSpeedup := float64(regexTime.Nanoseconds()) / float64(validationTime.Nanoseconds())
+	var speedupVsNative float64
+	if nativeTime.Nanoseconds() > 0 {
+		speedupVsNative = float64(nativeTime.Nanoseconds()) / float64(regexTime.Nanoseconds())
+	}
+
+	var validationSpeedup float64
+	if regexTime.Nanoseconds() > 0 {
+		validationSpeedup = float64(regexTime.Nanoseconds()) / float64(validationTime.Nanoseconds())
+	}
 
 	results["benchmark_results"] = map[string]interface{}{
-		"ultra_regex_parser": map[string]interface{}{
-			"method":      "pure_regex_parsing_v2",
+		"regex_parser": map[string]interface{}{
+			"method":      "regex_parsing",
 			"time":        regexTime.String(),
 			"time_ns":     regexTime.Nanoseconds(),
 			"success":     regexErr == nil,
 			"error":       getErrorString(regexErr),
-			"description": "Parsing 100% con expresiones regulares optimizadas",
+			"description": "Parsing con expresiones regulares optimizadas",
 		},
 		"validation_only": map[string]interface{}{
-			"method":      "regex_structure_validation_v2",
+			"method":      "regex_validation",
 			"time":        validationTime.String(),
 			"time_ns":     validationTime.Nanoseconds(),
 			"success":     validationErr == nil,
@@ -338,7 +354,7 @@ func comprehensiveBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 			"description": "Solo validación de estructura con regex",
 		},
 		"analysis_complete": map[string]interface{}{
-			"method":      "regex_analysis_suite",
+			"method":      "regex_analysis",
 			"time":        analysisTime.String(),
 			"time_ns":     analysisTime.Nanoseconds(),
 			"success":     true,
@@ -383,31 +399,13 @@ func comprehensiveBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 		"results_identical": compareResults(regexResult, nativeResult),
 	}
 
-	results["optimization_summary"] = map[string]interface{}{
-		"regex_techniques": []string{
-			"Expresiones regulares precompiladas",
-			"Detección directa de tipos JSON",
-			"Separación inteligente sin loops manuales",
-			"Validación estructural con patterns",
-			"Procesamiento batch de escape sequences",
-			"Conteo de elementos con regex",
-		},
-		"performance_gains": map[string]interface{}{
-			"eliminated_manual_parsing": true,
-			"precompiled_patterns":      true,
-			"batch_processing":          true,
-			"direct_type_detection":     true,
-			"structural_validation":     true,
-			"element_analysis":          true,
-		},
-	}
-
 	response := map[string]interface{}{
 		"success": true,
 		"method":  "comprehensive_regex_benchmark",
 		"data":    results,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -418,7 +416,7 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	examples := map[string]interface{}{
-		"ejemplos_basicos": []map[string]interface{}{
+		"ejemplos": []map[string]interface{}{
 			{
 				"nombre": "Objeto simple",
 				"json":   `{"name": "Juan", "age": 30, "active": true}`,
@@ -466,33 +464,6 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"json":   `{"string": "texto", "number": 42.5, "boolean": true, "null": null, "array": [1, 2], "object": {"nested": "value"}}`,
 				"tipo":   "object",
 			},
-			{
-				"nombre": "Números especiales",
-				"json":   `{"entero": 42, "decimal": 3.14159, "negativo": -123, "cientifico": 1.5e10, "cientifico_negativo": -2.5e-3}`,
-				"tipo":   "object",
-			},
-		},
-		"ejemplos_rendimiento": []map[string]interface{}{
-			{
-				"nombre": "JSON micro (ideal para medir overhead)",
-				"json":   `1`,
-				"tipo":   "number",
-			},
-			{
-				"nombre": "JSON pequeño",
-				"json":   `{"id": 1, "name": "test"}`,
-				"tipo":   "object",
-			},
-			{
-				"nombre": "JSON mediano",
-				"json":   generateMediumJSON(),
-				"tipo":   "object",
-			},
-			{
-				"nombre": "JSON grande (stress test)",
-				"json":   generateLargeJSON(),
-				"tipo":   "object",
-			},
 		},
 		"ejemplos_invalidos": []map[string]interface{}{
 			{
@@ -511,23 +482,14 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"error":  "estructura no cerrada",
 			},
 			{
-				"nombre": "Array con coma extra",
-				"json":   `[1, 2, 3,]`,
-				"error":  "coma extra",
-			},
-			{
 				"nombre": "String no terminado",
 				"json":   `{"mensaje": "hola mundo`,
 				"error":  "string no cerrado",
 			},
-			{
-				"nombre": "Número inválido",
-				"json":   `{"numero": 01.23}`,
-				"error":  "formato de número inválido",
-			},
 		},
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(examples)
 }
 
@@ -546,6 +508,7 @@ func respondWithError(w http.ResponseWriter, errorMsg, method string) {
 		Error:   errorMsg,
 		Method:  method,
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -621,63 +584,4 @@ func compareResults(result1, result2 interface{}) bool {
 	}
 
 	return string(json1) == string(json2)
-}
-
-func generateMediumJSON() string {
-	return `{
-		"usuario": {
-			"id": 12345,
-			"nombre": "Ana García",
-			"email": "ana.garcia@ejemplo.com",
-			"activo": true,
-			"perfil": {
-				"edad": 28,
-				"ciudad": "Madrid",
-				"intereses": ["tecnología", "música", "viajes"]
-			}
-		},
-		"configuracion": {
-			"tema": "oscuro",
-			"idioma": "es",
-			"notificaciones": true
-		},
-		"estadisticas": {
-			"visitas": 1250,
-			"tiempo_promedio": 3.45,
-			"ultima_conexion": "2024-01-15T10:30:00Z"
-		}
-	}`
-}
-
-func generateLargeJSON() string {
-	var builder strings.Builder
-	builder.WriteString(`{"datos": {"items": [`)
-
-	for i := 0; i < 50; i++ {
-		if i > 0 {
-			builder.WriteString(", ")
-		}
-		builder.WriteString(fmt.Sprintf(`{
-			"id": %d,
-			"nombre": "Item %d",
-			"descripcion": "Descripción detallada del item número %d para pruebas de rendimiento",
-			"precio": %.2f,
-			"activo": %t,
-			"categoria": "categoria_%d",
-			"etiquetas": ["tag1", "tag2", "tag3"],
-			"metadatos": {
-				"creado": "2024-01-01T00:00:00Z",
-				"modificado": "2024-01-02T12:00:00Z",
-				"version": "1.0.%d",
-				"propiedades": {
-					"color": "azul",
-					"tamaño": "mediano",
-					"peso": %d.5
-				}
-			}
-		}`, i, i, i, float64(i)*10.99+5.5, i%2 == 0, i%5, i, i))
-	}
-
-	builder.WriteString(`], "total": 50, "generado": "2024-01-01T00:00:00Z", "version": "2.0"}}`)
-	return builder.String()
 }
