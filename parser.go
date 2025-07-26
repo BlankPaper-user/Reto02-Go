@@ -312,7 +312,7 @@ func (p *Parser) parseNumber() (interface{}, error) {
 
 	// Subcadena del número encontrado
 	numberStr := p.input[start:p.index]
-	
+
 	// Intentamos convertir el número a un flotante (en JSON siempre son float64)
 	number, err := strconv.ParseFloat(numberStr, 64)
 	if err != nil {

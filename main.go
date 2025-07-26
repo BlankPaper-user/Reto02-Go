@@ -21,10 +21,10 @@ type ParseResponse struct {
 func main() {
 	// Servir archivos estáticos (HTML, CSS, JS)
 	http.Handle("/", http.FileServer(http.Dir("./static/")))
-	
+
 	// API endpoint para parsear JSON
 	http.HandleFunc("/api/parse", parseJSONHandler)
-	
+
 	// Endpoint para obtener ejemplos
 	http.HandleFunc("/api/examples", examplesHandler)
 
@@ -36,7 +36,7 @@ func main() {
 	fmt.Println("   GET  /api/examples - Obtener ejemplos")
 	fmt.Println("⏹️  Presiona Ctrl+C para detener")
 	fmt.Println(strings.Repeat("-", 50))
-	
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -113,7 +113,7 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 				"json":   `{"name": "Juan", "age": 30, "active": true}`,
 			},
 			{
-				"nombre": "Array de strings", 
+				"nombre": "Array de strings",
 				"json":   `["manzana", "plátano", "cereza"]`,
 			},
 			{
@@ -170,7 +170,7 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log para debugging
-	fmt.Printf("Enviando ejemplos: %d válidos, %d inválidos\n", 
+	fmt.Printf("Enviando ejemplos: %d válidos, %d inválidos\n",
 		len(examples["ejemplos"].([]map[string]interface{})),
 		len(examples["ejemplos_invalidos"].([]map[string]interface{})))
 
