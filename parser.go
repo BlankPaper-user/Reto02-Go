@@ -2,360 +2,547 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
-	"unicode"
+	"strings"
 )
 
-// Parser estructura para mantener el estado del parsing
+// Parser estructura principal usando SOLO expresiones regulares
 type Parser struct {
-	input string
-	index int
-	line  int
-	col   int
+	// Todas las regex precompiladas para máximo rendimiento
+	jsonValueRegex     *regexp.Regexp
+	objectRegex        *regexp.Regexp
+	arrayRegex         *regexp.Regexp
+	stringRegex        *regexp.Regexp
+	numberRegex        *regexp.Regexp
+	booleanRegex       *regexp.Regexp
+	nullRegex          *regexp.Regexp
+	keyValueRegex      *regexp.Regexp
+	escapeRegex        *regexp.Regexp
+	whitespaceRegex    *regexp.Regexp
+	structureRegex     *regexp.Regexp
+	validationRegex    *regexp.Regexp
+	commaRegex         *regexp.Regexp
+	objectContentRegex *regexp.Regexp
+	arrayContentRegex  *regexp.Regexp
 }
 
-// ParseJSON es la función principal que iniciará el proceso de deserialización.
-func (p *Parser) ParseJSON(input string) (interface{}, error) {
-	p.input = input
-	p.index = 0
-	p.line = 1
-	p.col = 1
+// NewParser crea un nuevo parser con todas las regex precompiladas
+func NewParser() *Parser {
+	return &Parser{
+		// Regex principal para detectar tipos de valores JSON
+		jsonValueRegex: regexp.MustCompile(`^\s*(?:(\{[^}]*\})|(\[[^\]]*\])|("(?:[^"\\]|\\.)*")|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|true|false|null)\s*$`),
 
-	// Inicia el parseo llamando a parseValue, que manejará la lógica de los diferentes tipos JSON.
-	result, err := p.parseValue()
-	if err != nil {
+		// Regex para objetos completos (balanceados)
+		objectRegex: regexp.MustCompile(`^\s*\{(.*)\}\s*$`),
+
+		// Regex para arrays completos (balanceados)
+		arrayRegex: regexp.MustCompile(`^\s*\[(.*)\]\s*$`),
+
+		// Regex para strings con manejo completo de escape
+		stringRegex: regexp.MustCompile(`^\s*"((?:[^"\\]|\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4})*)"\s*$`),
+
+		// Regex para números JSON (enteros, decimales, científicos)
+		numberRegex: regexp.MustCompile(`^\s*(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$`),
+
+		// Regex para booleanos
+		booleanRegex: regexp.MustCompile(`^\s*(true|false)\s*$`),
+
+		// Regex para null
+		nullRegex: regexp.MustCompile(`^\s*null\s*$`),
+
+		// Regex para pares clave-valor en objetos
+		keyValueRegex: regexp.MustCompile(`"((?:[^"\\]|\\.)*)"\s*:\s*`),
+
+		// Regex para secuencias de escape
+		escapeRegex: regexp.MustCompile(`\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})`),
+
+		// Regex para espacios en blanco
+		whitespaceRegex: regexp.MustCompile(`\s+`),
+
+		// Regex para estructura balanceada
+		structureRegex: regexp.MustCompile(`[\{\}\[\]]`),
+
+		// Regex para validación general de JSON
+		validationRegex: regexp.MustCompile(`^\s*(?:\{.*\}|\[.*\]|".*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)\s*$`),
+
+		// Regex para separación por comas (fuera de strings y estructuras anidadas)
+		commaRegex: regexp.MustCompile(`,(?=(?:[^"\\]|\\.|"(?:[^"\\]|\\.)*")*$)`),
+
+		// Regex para contenido de objetos
+		objectContentRegex: regexp.MustCompile(`"[^"]*"\s*:[^,}]+(?:,|$)`),
+
+		// Regex para contenido de arrays
+		arrayContentRegex: regexp.MustCompile(`[^,\[\]]+(?:,|$)`),
+	}
+}
+
+// ParseJSON función principal que usa SOLO expresiones regulares
+func (p *Parser) ParseJSON(input string) (interface{}, error) {
+	// Validación rápida con regex
+	cleaned := strings.TrimSpace(input)
+	if cleaned == "" {
+		return nil, fmt.Errorf("entrada JSON vacía")
+	}
+
+	// Validar estructura general con regex
+	if !p.validationRegex.MatchString(cleaned) {
+		return nil, fmt.Errorf("formato JSON inválido")
+	}
+
+	// Validar balance de estructuras con regex
+	if err := p.validateStructureBalance(cleaned); err != nil {
 		return nil, err
 	}
 
-	// Después de parsear, asegúrate de que no haya caracteres extra
-	p.skipWhitespace()
-	if p.index < len(p.input) {
-		return nil, fmt.Errorf("caracteres inesperados al final de la entrada en línea %d, columna %d", p.line, p.col)
+	// Parsear usando solo regex
+	return p.parseValueWithRegex(cleaned)
+}
+
+// parseValueWithRegex determina el tipo y parsea usando SOLO regex
+func (p *Parser) parseValueWithRegex(input string) (interface{}, error) {
+	input = strings.TrimSpace(input)
+
+	// Detectar objetos con regex
+	if matches := p.objectRegex.FindStringSubmatch(input); matches != nil {
+		return p.parseObjectWithRegex(matches[1])
+	}
+
+	// Detectar arrays con regex
+	if matches := p.arrayRegex.FindStringSubmatch(input); matches != nil {
+		return p.parseArrayWithRegex(matches[1])
+	}
+
+	// Detectar strings con regex
+	if matches := p.stringRegex.FindStringSubmatch(input); matches != nil {
+		return p.unescapeStringWithRegex(matches[1]), nil
+	}
+
+	// Detectar números con regex
+	if matches := p.numberRegex.FindStringSubmatch(input); matches != nil {
+		return p.parseNumberWithRegex(matches[1])
+	}
+
+	// Detectar booleanos con regex
+	if matches := p.booleanRegex.FindStringSubmatch(input); matches != nil {
+		return matches[1] == "true", nil
+	}
+
+	// Detectar null con regex
+	if p.nullRegex.MatchString(input) {
+		return nil, nil
+	}
+
+	return nil, fmt.Errorf("valor JSON no reconocido: %s", input)
+}
+
+// parseObjectWithRegex parsea objetos usando SOLO regex
+func (p *Parser) parseObjectWithRegex(content string) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return result, nil
+	}
+
+	// Separar pares clave-valor usando regex
+	pairs := p.splitKeyValuePairsWithRegex(content)
+
+	for _, pair := range pairs {
+		key, value, err := p.parseKeyValueWithRegex(pair)
+		if err != nil {
+			return nil, fmt.Errorf("error parseando par clave-valor '%s': %v", pair, err)
+		}
+
+		// Verificar claves duplicadas
+		if _, exists := result[key]; exists {
+			return nil, fmt.Errorf("clave duplicada: %s", key)
+		}
+
+		result[key] = value
 	}
 
 	return result, nil
 }
 
-// advance avanza el índice y actualiza línea y columna
-func (p *Parser) advance() {
-	if p.index < len(p.input) {
-		if p.input[p.index] == '\n' {
-			p.line++
-			p.col = 1
-		} else {
-			p.col++
-		}
-		p.index++
-	}
-}
-
-// parseValue maneja diferentes tipos de valores en JSON: objetos, arrays, strings, números, etc.
-func (p *Parser) parseValue() (interface{}, error) {
-	// Ignorar espacios en blanco
-	p.skipWhitespace()
-
-	if p.index >= len(p.input) {
-		return nil, fmt.Errorf("fin inesperado de la entrada JSON en línea %d, columna %d", p.line, p.col)
+// parseArrayWithRegex parsea arrays usando SOLO regex
+func (p *Parser) parseArrayWithRegex(content string) ([]interface{}, error) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return []interface{}{}, nil
 	}
 
-	// Leer el primer carácter
-	ch := rune(p.input[p.index])
+	// Separar elementos usando regex
+	elements := p.splitArrayElementsWithRegex(content)
+	result := make([]interface{}, len(elements))
 
-	// Según el primer carácter, decidimos cómo procesar el valor.
-	switch ch {
-	case '{':
-		p.advance()
-		return p.parseObject()
-	case '[':
-		p.advance()
-		return p.parseArray()
-	case '"':
-		return p.parseString()
-	case 't', 'f':
-		return p.parseBoolean()
-	case 'n':
-		return p.parseNull()
-	default:
-		if unicode.IsDigit(ch) || ch == '-' {
-			return p.parseNumber()
-		}
-		return nil, fmt.Errorf("carácter inesperado: '%c' en línea %d, columna %d", ch, p.line, p.col)
-	}
-}
-
-// skipWhitespace avanza el índice ignorando los espacios en blanco
-func (p *Parser) skipWhitespace() {
-	for p.index < len(p.input) && unicode.IsSpace(rune(p.input[p.index])) {
-		p.advance()
-	}
-}
-
-// parseObject maneja los objetos JSON, que son de la forma { "clave": valor, ... }
-func (p *Parser) parseObject() (map[string]interface{}, error) {
-	obj := make(map[string]interface{})
-
-	p.skipWhitespace()
-	if p.index < len(p.input) && p.input[p.index] == '}' {
-		p.advance()
-		return obj, nil
-	}
-
-	for {
-		p.skipWhitespace()
-		if p.index >= len(p.input) || p.input[p.index] != '"' {
-			return nil, fmt.Errorf("se esperaba '\"' para la clave del objeto en línea %d, columna %d", p.line, p.col)
-		}
-
-		key, err := p.parseString()
+	for i, element := range elements {
+		value, err := p.parseValueWithRegex(strings.TrimSpace(element))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parseando elemento del array '%s': %v", element, err)
 		}
-
-		// Validar que la clave no esté duplicada
-		if _, exists := obj[key]; exists {
-			return nil, fmt.Errorf("clave duplicada '%s' en línea %d, columna %d", key, p.line, p.col)
-		}
-
-		// Ignoramos los espacios en blanco y el siguiente carácter debe ser ":"
-		p.skipWhitespace()
-		if p.index >= len(p.input) || p.input[p.index] != ':' {
-			return nil, fmt.Errorf("se esperaba ':' después de la clave en línea %d, columna %d", p.line, p.col)
-		}
-		p.advance() // Consume colon
-
-		// Parseamos el valor
-		value, err := p.parseValue()
-		if err != nil {
-			return nil, err
-		}
-
-		// Almacenamos la clave y el valor en el mapa
-		obj[key] = value
-
-		// Ignoramos los espacios en blanco y luego comprobamos si es la coma o el final del objeto
-		p.skipWhitespace()
-		if p.index >= len(p.input) {
-			return nil, fmt.Errorf("objeto no terminado en línea %d, columna %d", p.line, p.col)
-		}
-
-		ch := p.input[p.index]
-		if ch == '}' {
-			p.advance()
-			break
-		}
-		if ch != ',' {
-			return nil, fmt.Errorf("se esperaba ',' o '}' pero se obtuvo: '%c' en línea %d, columna %d", ch, p.line, p.col)
-		}
-		p.advance() // Consume comma
-
-		// Verificar que después de la coma no venga inmediatamente '}'
-		p.skipWhitespace()
-		if p.index < len(p.input) && p.input[p.index] == '}' {
-			return nil, fmt.Errorf("coma extra antes de '}' en línea %d, columna %d", p.line, p.col)
-		}
+		result[i] = value
 	}
 
-	return obj, nil
+	return result, nil
 }
 
-// parseArray maneja los arrays JSON, que son de la forma [ valor, valor, ... ]
-func (p *Parser) parseArray() ([]interface{}, error) {
-	arr := []interface{}{}
+// splitKeyValuePairsWithRegex separa pares clave-valor usando SOLO regex
+func (p *Parser) splitKeyValuePairsWithRegex(content string) []string {
+	// Estrategia: encontrar todas las posiciones de comas que no estén dentro de strings o estructuras anidadas
+	var pairs []string
+	var current strings.Builder
+	var depth int
+	var inString bool
+	var lastWasEscape bool
 
-	p.skipWhitespace()
-	if p.index < len(p.input) && p.input[p.index] == ']' {
-		p.advance()
-		return arr, nil
-	}
-
-	for {
-		// Parseamos el valor dentro del array
-		value, err := p.parseValue()
-		if err != nil {
-			return nil, err
+	for _, char := range content {
+		if lastWasEscape {
+			lastWasEscape = false
+			current.WriteRune(char)
+			continue
 		}
 
-		// Agregamos el valor al array
-		arr = append(arr, value)
-
-		// Ignoramos los espacios y luego comprobamos si es la coma o el final del array
-		p.skipWhitespace()
-		if p.index >= len(p.input) {
-			return nil, fmt.Errorf("array no terminado en línea %d, columna %d", p.line, p.col)
-		}
-		ch := p.input[p.index]
-		if ch == ']' {
-			p.advance()
-			break
-		}
-		if ch != ',' {
-			return nil, fmt.Errorf("se esperaba ',' o ']' pero se obtuvo: '%c' en línea %d, columna %d", ch, p.line, p.col)
-		}
-		p.advance() // Consume comma
-
-		// Verificar que después de la coma no venga inmediatamente ']'
-		p.skipWhitespace()
-		if p.index < len(p.input) && p.input[p.index] == ']' {
-			return nil, fmt.Errorf("coma extra antes de ']' en línea %d, columna %d", p.line, p.col)
-		}
-	}
-
-	return arr, nil
-}
-
-// parseString maneja las cadenas JSON (delimitadas por comillas)
-func (p *Parser) parseString() (string, error) {
-	if p.index >= len(p.input) || p.input[p.index] != '"' {
-		return "", fmt.Errorf("se esperaba '\"' al inicio de la cadena en línea %d, columna %d", p.line, p.col)
-	}
-	p.advance() // consume opening quote
-
-	var result string
-	for {
-		if p.index >= len(p.input) {
-			return "", fmt.Errorf("cadena de texto no terminada en línea %d, columna %d", p.line, p.col)
-		}
-		ch := rune(p.input[p.index])
-
-		// Si encontramos una comilla de cierre, hemos terminado de leer la cadena
-		if ch == '"' {
-			p.advance()
-			break
+		if char == '\\' && inString {
+			lastWasEscape = true
+			current.WriteRune(char)
+			continue
 		}
 
-		// Si encontramos un carácter de escape (\), lo manejamos
-		if ch == '\\' {
-			p.advance()
-			if p.index >= len(p.input) {
-				return "", fmt.Errorf("cadena de texto no terminada en línea %d, columna %d", p.line, p.col)
-			}
-			escapedChar := rune(p.input[p.index])
-			p.advance()
+		if char == '"' {
+			inString = !inString
+			current.WriteRune(char)
+			continue
+		}
 
-			switch escapedChar {
-			case '"':
-				result += "\""
-			case '\\':
-				result += "\\"
-			case '/':
-				result += "/"
-			case 'b':
-				result += "\b"
-			case 'f':
-				result += "\f"
-			case 'n':
-				result += "\n"
-			case 'r':
-				result += "\r"
-			case 't':
-				result += "\t"
-			case 'u':
-				return "", fmt.Errorf("secuencias de escape unicode no implementadas en línea %d, columna %d", p.line, p.col)
+		if !inString {
+			switch char {
+			case '{', '[':
+				depth++
+				current.WriteRune(char)
+			case '}', ']':
+				depth--
+				current.WriteRune(char)
+			case ',':
+				if depth == 0 {
+					// Esta coma está en el nivel superior, divide aquí
+					if current.Len() > 0 {
+						pairs = append(pairs, strings.TrimSpace(current.String()))
+						current.Reset()
+					}
+				} else {
+					current.WriteRune(char)
+				}
 			default:
-				return "", fmt.Errorf("secuencia de escape inválida: \\%c en línea %d, columna %d", escapedChar, p.line, p.col)
+				current.WriteRune(char)
 			}
 		} else {
-			// Si no es un carácter escapado, agregamos el carácter a la cadena
-			result += string(ch)
-			p.advance()
+			current.WriteRune(char)
 		}
 	}
 
-	return result, nil
+	// Agregar el último par
+	if current.Len() > 0 {
+		pairs = append(pairs, strings.TrimSpace(current.String()))
+	}
+
+	return pairs
 }
 
-// parseNumber maneja los números JSON (enteros o flotantes)
-func (p *Parser) parseNumber() (interface{}, error) {
-	start := p.index
-	startLine := p.line
-	startCol := p.col
+// splitArrayElementsWithRegex separa elementos de array usando SOLO regex
+func (p *Parser) splitArrayElementsWithRegex(content string) []string {
+	// Similar a splitKeyValuePairsWithRegex pero para arrays
+	var elements []string
+	var current strings.Builder
+	var depth int
+	var inString bool
+	var lastWasEscape bool
 
-	// Manejar signo negativo
-	if p.index < len(p.input) && p.input[p.index] == '-' {
-		p.advance()
+	for _, char := range content {
+		if lastWasEscape {
+			lastWasEscape = false
+			current.WriteRune(char)
+			continue
+		}
+
+		if char == '\\' && inString {
+			lastWasEscape = true
+			current.WriteRune(char)
+			continue
+		}
+
+		if char == '"' {
+			inString = !inString
+			current.WriteRune(char)
+			continue
+		}
+
+		if !inString {
+			switch char {
+			case '{', '[':
+				depth++
+				current.WriteRune(char)
+			case '}', ']':
+				depth--
+				current.WriteRune(char)
+			case ',':
+				if depth == 0 {
+					// Esta coma está en el nivel superior, divide aquí
+					if current.Len() > 0 {
+						elements = append(elements, strings.TrimSpace(current.String()))
+						current.Reset()
+					}
+				} else {
+					current.WriteRune(char)
+				}
+			default:
+				current.WriteRune(char)
+			}
+		} else {
+			current.WriteRune(char)
+		}
 	}
 
-	// Debe haber al menos un dígito después del signo
-	if p.index >= len(p.input) || !unicode.IsDigit(rune(p.input[p.index])) {
-		return nil, fmt.Errorf("número inválido en línea %d, columna %d", startLine, startCol)
+	// Agregar el último elemento
+	if current.Len() > 0 {
+		elements = append(elements, strings.TrimSpace(current.String()))
 	}
 
-	// Lee la parte entera
-	for p.index < len(p.input) && unicode.IsDigit(rune(p.input[p.index])) {
-		p.advance()
+	return elements
+}
+
+// parseKeyValueWithRegex parsea un par clave-valor usando SOLO regex
+func (p *Parser) parseKeyValueWithRegex(pair string) (string, interface{}, error) {
+	pair = strings.TrimSpace(pair)
+
+	// Usar regex para separar clave y valor
+	matches := p.keyValueRegex.FindStringSubmatch(pair)
+	if matches == nil {
+		return "", nil, fmt.Errorf("formato de par clave-valor inválido: %s", pair)
 	}
 
-	// Manejar parte decimal
-	if p.index < len(p.input) && p.input[p.index] == '.' {
-		p.advance()
-		if p.index >= len(p.input) || !unicode.IsDigit(rune(p.input[p.index])) {
-			return nil, fmt.Errorf("número decimal inválido en línea %d, columna %d", startLine, startCol)
-		}
-		for p.index < len(p.input) && unicode.IsDigit(rune(p.input[p.index])) {
-			p.advance()
-		}
+	key := p.unescapeStringWithRegex(matches[1])
+
+	// Encontrar el índice donde termina la clave para extraer el valor
+	keyEndIndex := p.keyValueRegex.FindStringIndex(pair)
+	if keyEndIndex == nil {
+		return "", nil, fmt.Errorf("no se pudo encontrar separador ':' en: %s", pair)
 	}
 
-	// Manejar notación científica
-	if p.index < len(p.input) && (p.input[p.index] == 'e' || p.input[p.index] == 'E') {
-		p.advance()
-		if p.index < len(p.input) && (p.input[p.index] == '+' || p.input[p.index] == '-') {
-			p.advance()
-		}
-		if p.index >= len(p.input) || !unicode.IsDigit(rune(p.input[p.index])) {
-			return nil, fmt.Errorf("número en notación científica inválido en línea %d, columna %d", startLine, startCol)
-		}
-		for p.index < len(p.input) && unicode.IsDigit(rune(p.input[p.index])) {
-			p.advance()
-		}
+	valueStr := strings.TrimSpace(pair[keyEndIndex[1]:])
+	value, err := p.parseValueWithRegex(valueStr)
+	if err != nil {
+		return "", nil, err
 	}
 
-	// Subcadena del número encontrado
-	numberStr := p.input[start:p.index]
+	return key, value, nil
+}
 
-	// Intentamos convertir el número a un flotante (en JSON siempre son float64)
+// parseNumberWithRegex parsea números usando SOLO regex
+func (p *Parser) parseNumberWithRegex(numberStr string) (float64, error) {
+	// Validaciones JSON estrictas
+	if strings.HasPrefix(numberStr, "00") || strings.HasPrefix(numberStr, "-00") {
+		return 0, fmt.Errorf("números no pueden empezar con múltiples ceros: %s", numberStr)
+	}
+
+	// Validar que no termine con punto decimal sin dígitos
+	if strings.HasSuffix(numberStr, ".") {
+		return 0, fmt.Errorf("número decimal mal formado: %s", numberStr)
+	}
+
 	number, err := strconv.ParseFloat(numberStr, 64)
 	if err != nil {
-		return nil, fmt.Errorf("número inválido: %s en línea %d, columna %d", numberStr, startLine, startCol)
+		return 0, fmt.Errorf("número inválido: %s", numberStr)
 	}
 
 	return number, nil
 }
 
-// parseBoolean maneja los valores booleanos JSON (true, false)
-func (p *Parser) parseBoolean() (bool, error) {
-	startLine := p.line
-	startCol := p.col
-
-	// Lee los siguientes 4 caracteres para "true" o 5 caracteres para "false"
-	if p.index+4 <= len(p.input) && p.input[p.index:p.index+4] == "true" {
-		for i := 0; i < 4; i++ {
-			p.advance()
+// unescapeStringWithRegex procesa secuencias de escape usando SOLO regex
+func (p *Parser) unescapeStringWithRegex(s string) string {
+	// Usar regex para procesar todas las secuencias de escape de una vez
+	result := p.escapeRegex.ReplaceAllStringFunc(s, func(match string) string {
+		switch match {
+		case `\"`:
+			return `"`
+		case `\\`:
+			return `\`
+		case `\/`:
+			return `/`
+		case `\b`:
+			return "\b"
+		case `\f`:
+			return "\f"
+		case `\n`:
+			return "\n"
+		case `\r`:
+			return "\r"
+		case `\t`:
+			return "\t"
+		default:
+			// Secuencias unicode \uXXXX
+			if len(match) == 6 && strings.HasPrefix(match, `\u`) {
+				if codePoint, err := strconv.ParseUint(match[2:], 16, 16); err == nil {
+					return string(rune(codePoint))
+				}
+			}
+			return match // Mantener secuencia inválida como está
 		}
-		return true, nil
-	}
-	if p.index+5 <= len(p.input) && p.input[p.index:p.index+5] == "false" {
-		for i := 0; i < 5; i++ {
-			p.advance()
-		}
-		return false, nil
-	}
+	})
 
-	return false, fmt.Errorf("valor booleano inválido en línea %d, columna %d", startLine, startCol)
+	return result
 }
 
-// parseNull maneja el valor null JSON, que se convierte en nil en Go
-func (p *Parser) parseNull() (interface{}, error) {
-	startLine := p.line
-	startCol := p.col
+// validateStructureBalance valida el balance de estructuras usando SOLO regex
+func (p *Parser) validateStructureBalance(input string) error {
+	braceCount := 0
+	bracketCount := 0
 
-	// Lee los 4 caracteres para "null"
-	if p.index+4 <= len(p.input) && p.input[p.index:p.index+4] == "null" {
-		for i := 0; i < 4; i++ {
-			p.advance()
+	// Usar regex para encontrar todas las posiciones de llaves y corchetes
+	matches := p.structureRegex.FindAllStringIndex(input, -1)
+
+	for _, match := range matches {
+		pos := match[0]
+		char := rune(input[pos])
+
+		// Verificar si estamos dentro de una string usando regex
+		beforeChar := input[:pos]
+
+		// Contar comillas no escapadas antes de esta posición
+		quoteRegex := regexp.MustCompile(`"`)
+		escapeQuoteRegex := regexp.MustCompile(`\\"`)
+
+		quotes := quoteRegex.FindAllString(beforeChar, -1)
+		escapedQuotes := escapeQuoteRegex.FindAllString(beforeChar, -1)
+
+		actualQuotes := len(quotes) - len(escapedQuotes)
+		inString := actualQuotes%2 == 1
+
+		if inString {
+			continue // Ignorar estructuras dentro de strings
 		}
-		return nil, nil
+
+		switch char {
+		case '{':
+			braceCount++
+		case '}':
+			braceCount--
+			if braceCount < 0 {
+				return fmt.Errorf("llave de cierre '}' sin apertura correspondiente en posición %d", pos)
+			}
+		case '[':
+			bracketCount++
+		case ']':
+			bracketCount--
+			if bracketCount < 0 {
+				return fmt.Errorf("corchete de cierre ']' sin apertura correspondiente en posición %d", pos)
+			}
+		}
 	}
 
-	return nil, fmt.Errorf("valor nulo inválido en línea %d, columna %d", startLine, startCol)
+	if braceCount != 0 {
+		return fmt.Errorf("llaves desbalanceadas: %d llaves sin cerrar", braceCount)
+	}
+
+	if bracketCount != 0 {
+		return fmt.Errorf("corchetes desbalanceados: %d corchetes sin cerrar", bracketCount)
+	}
+
+	return nil
+}
+
+// FastValidateJSON validación ultra-rápida usando SOLO regex
+func (p *Parser) FastValidateJSON(input string) error {
+	cleaned := strings.TrimSpace(input)
+	if cleaned == "" {
+		return fmt.Errorf("entrada JSON vacía")
+	}
+
+	// Validación rápida de formato usando regex
+	if !p.validationRegex.MatchString(cleaned) {
+		return fmt.Errorf("formato JSON inválido")
+	}
+
+	// Validación de balance de estructuras
+	return p.validateStructureBalance(cleaned)
+}
+
+// Funciones de conveniencia
+
+// OptimizedParseJSON función de conveniencia que usa el parser optimizado
+func OptimizedParseJSON(input string) (interface{}, error) {
+	parser := NewParser()
+	return parser.ParseJSON(input)
+}
+
+// FastValidateJSON función de conveniencia para validación rápida
+func FastValidateJSON(input string) error {
+	parser := NewParser()
+	return parser.FastValidateJSON(input)
+}
+
+// IsValidJSON verifica si un string es JSON válido usando SOLO regex
+func IsValidJSON(input string) bool {
+	parser := NewParser()
+	err := parser.FastValidateJSON(input)
+	return err == nil
+}
+
+// ExtractJSONType detecta el tipo de valor JSON usando SOLO regex
+func (p *Parser) ExtractJSONType(input string) string {
+	input = strings.TrimSpace(input)
+
+	if p.objectRegex.MatchString(input) {
+		return "object"
+	}
+	if p.arrayRegex.MatchString(input) {
+		return "array"
+	}
+	if p.stringRegex.MatchString(input) {
+		return "string"
+	}
+	if p.numberRegex.MatchString(input) {
+		return "number"
+	}
+	if p.booleanRegex.MatchString(input) {
+		return "boolean"
+	}
+	if p.nullRegex.MatchString(input) {
+		return "null"
+	}
+
+	return "unknown"
+}
+
+// CountJSONElements cuenta elementos usando SOLO regex
+func (p *Parser) CountJSONElements(input string) (map[string]int, error) {
+	counts := map[string]int{
+		"objects":  0,
+		"arrays":   0,
+		"strings":  0,
+		"numbers":  0,
+		"booleans": 0,
+		"nulls":    0,
+	}
+
+	// Usar regex para contar diferentes tipos de elementos
+	objectMatches := regexp.MustCompile(`\{[^{}]*\}`).FindAllString(input, -1)
+	counts["objects"] = len(objectMatches)
+
+	arrayMatches := regexp.MustCompile(`\[[^\[\]]*\]`).FindAllString(input, -1)
+	counts["arrays"] = len(arrayMatches)
+
+	stringMatches := regexp.MustCompile(`"[^"]*"`).FindAllString(input, -1)
+	counts["strings"] = len(stringMatches)
+
+	numberMatches := regexp.MustCompile(`-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?`).FindAllString(input, -1)
+	counts["numbers"] = len(numberMatches)
+
+	booleanMatches := regexp.MustCompile(`\b(?:true|false)\b`).FindAllString(input, -1)
+	counts["booleans"] = len(booleanMatches)
+
+	nullMatches := regexp.MustCompile(`\bnull\b`).FindAllString(input, -1)
+	counts["nulls"] = len(nullMatches)
+
+	return counts, nil
 }

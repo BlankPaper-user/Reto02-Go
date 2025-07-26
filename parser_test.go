@@ -18,7 +18,7 @@ func TestParseJSON(t *testing.T) {
 		// Casos válidos básicos
 		{"Objeto válido simple", `{"name": "John", "age": 30}`,
 			map[string]interface{}{"name": "John", "age": 30.0}, false, ""},
-		{"Array válido", `["apple", "banana", "cherry"]`, 
+		{"Array válido", `["apple", "banana", "cherry"]`,
 			[]interface{}{"apple", "banana", "cherry"}, false, ""},
 		{"String válido", `"hello"`, "hello", false, ""},
 		{"Número entero", `123`, 123.0, false, ""},
@@ -32,7 +32,7 @@ func TestParseJSON(t *testing.T) {
 		// Casos válidos con espacios
 		{"Objeto con espacios", `{ "name" : "John" , "age" : 30 }`,
 			map[string]interface{}{"name": "John", "age": 30.0}, false, ""},
-		{"Array con espacios", `[ "a" , "b" , "c" ]`, 
+		{"Array con espacios", `[ "a" , "b" , "c" ]`,
 			[]interface{}{"a", "b", "c"}, false, ""},
 
 		// Casos válidos vacíos
@@ -40,9 +40,9 @@ func TestParseJSON(t *testing.T) {
 		{"Array vacío", `[]`, []interface{}{}, false, ""},
 
 		// Casos válidos anidados
-		{"Objeto anidado", `{"a": {"b": 1}}`, 
+		{"Objeto anidado", `{"a": {"b": 1}}`,
 			map[string]interface{}{"a": map[string]interface{}{"b": 1.0}}, false, ""},
-		{"Array anidado", `[1, [2, 3], 4]`, 
+		{"Array anidado", `[1, [2, 3], 4]`,
 			[]interface{}{1.0, []interface{}{2.0, 3.0}, 4.0}, false, ""},
 		{"Estructura compleja", `{"users": [{"name": "Ana", "active": true}, {"name": "Carlos", "active": false}], "count": 2}`,
 			map[string]interface{}{
@@ -61,11 +61,11 @@ func TestParseJSON(t *testing.T) {
 		// Casos válidos con múltiples tipos
 		{"Tipos mixtos", `{"string": "text", "number": 42.5, "boolean": true, "null": null, "array": [1, 2]}`,
 			map[string]interface{}{
-				"string": "text", 
-				"number": 42.5, 
-				"boolean": true, 
-				"null": nil, 
-				"array": []interface{}{1.0, 2.0},
+				"string":  "text",
+				"number":  42.5,
+				"boolean": true,
+				"null":    nil,
+				"array":   []interface{}{1.0, 2.0},
 			}, false, ""},
 
 		// Casos inválidos - Sintaxis general
@@ -105,9 +105,9 @@ func TestParseJSON(t *testing.T) {
 		{"Múltiples valores", `1 2`, nil, true, "caracteres inesperados al final"},
 
 		// Casos con espacios en blanco variados
-		{"JSON con saltos de línea", "{\n  \"name\": \"John\",\n  \"age\": 30\n}", 
+		{"JSON con saltos de línea", "{\n  \"name\": \"John\",\n  \"age\": 30\n}",
 			map[string]interface{}{"name": "John", "age": 30.0}, false, ""},
-		{"JSON con tabs", "\t{\t\"a\"\t:\t1\t}\t", 
+		{"JSON con tabs", "\t{\t\"a\"\t:\t1\t}\t",
 			map[string]interface{}{"a": 1.0}, false, ""},
 
 		// Números especiales
@@ -162,7 +162,7 @@ func TestParserErrorPositions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Parser{}
 			_, err := p.ParseJSON(tt.input)
-			
+
 			if err == nil {
 				t.Errorf("ParseJSON() expected error but got none")
 				return
@@ -170,7 +170,7 @@ func TestParserErrorPositions(t *testing.T) {
 
 			errorMsg := err.Error()
 			expectedLine := strings.Contains(errorMsg, fmt.Sprintf("línea %d", tt.wantLine))
-			
+
 			if !expectedLine {
 				t.Errorf("ParseJSON() error = %q, want to contain line %d", errorMsg, tt.wantLine)
 			}
@@ -221,7 +221,7 @@ func TestParseJSONLarge(t *testing.T) {
 
 	p := &Parser{}
 	result, err := p.ParseJSON(sb.String())
-	
+
 	if err != nil {
 		t.Errorf("ParseJSON() large JSON error = %v", err)
 		return
