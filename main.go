@@ -45,35 +45,35 @@ func main() {
 	http.HandleFunc("/api/analyze", analyzeJSONHandler)
 	http.HandleFunc("/api/benchmark", benchmarkHandler)
 	http.HandleFunc("/api/examples", examplesHandler)
-	http.HandleFunc("/api/convert-to-go", convertToGoHandler)
+	http.HandleFunc("/api/convert-to-go", convertToGoHandler) // Conversor simplificado
 
-	fmt.Println("🚀 PARSER JSON CON EXPRESIONES REGULARES")
+	fmt.Println("🚀 PARSER JSON + CONVERSOR SIMPLIFICADO")
 	fmt.Println("📁 Sirviendo archivos desde: ./static/")
 	fmt.Println("🌐 Accede a: http://localhost:8080")
 	fmt.Println()
-	fmt.Println("⚡ OPTIMIZACIONES IMPLEMENTADAS:")
-	fmt.Println("   • 🔥 Expresiones Regulares Precompiladas")
+	fmt.Println("⚡ CARACTERÍSTICAS PRINCIPALES:")
+	fmt.Println("   • 🔥 Parser JSON con Expresiones Regulares")
 	fmt.Println("   • ⚡ Detección Rápida de Tipos JSON")
 	fmt.Println("   • 🧠 Parsing Estructural Inteligente")
 	fmt.Println("   • 🛡️ Validación Completa con Regex")
 	fmt.Println("   • 📊 Análisis de Elementos")
 	fmt.Println("   • 🚀 Rendimiento Optimizado")
-	fmt.Println("   • 📄 Conversión de TXT a Go")
+	fmt.Println("   • 🎯 Conversor Archivo → Go SIMPLIFICADO")
 	fmt.Println()
 	fmt.Println("🔧 API ENDPOINTS DISPONIBLES:")
-	fmt.Println("   POST /api/parse        - Parsing con regex")
-	fmt.Println("   POST /api/validate     - Validación rápida")
-	fmt.Println("   POST /api/analyze      - Análisis completo del JSON")
-	fmt.Println("   POST /api/benchmark    - Comparación de rendimiento")
-	fmt.Println("   POST /api/convert-to-go - Convierte TXT a código Go")
-	fmt.Println("   GET  /api/examples     - Ejemplos de prueba")
+	fmt.Println("   POST /api/parse           - Parsing JSON con regex")
+	fmt.Println("   POST /api/validate        - Validación rápida")
+	fmt.Println("   POST /api/analyze         - Análisis completo del JSON")
+	fmt.Println("   POST /api/benchmark       - Comparación de rendimiento")
+	fmt.Println("   POST /api/convert-to-go   - 🎯 CONVERSOR SIMPLIFICADO")
+	fmt.Println("   GET  /api/examples        - Ejemplos de prueba")
 	fmt.Println()
-	fmt.Println("💡 TÉCNICAS DE OPTIMIZACIÓN:")
-	fmt.Println("   • Regex patterns para extracción directa")
-	fmt.Println("   • Eliminación de parsing manual caracter por caracter")
-	fmt.Println("   • Procesamiento inteligente de estructuras anidadas")
-	fmt.Println("   • Validación estructural con patterns")
-	fmt.Println("   • Manejo eficiente de escape sequences")
+	fmt.Println("🎯 CONVERSOR SIMPLIFICADO:")
+	fmt.Println("   • Solo sube archivo → conversión automática")
+	fmt.Println("   • Package: main (predeterminado)")
+	fmt.Println("   • Variable: textContent (predeterminado)")
+	fmt.Println("   • Tipo: var (predeterminado)")
+	fmt.Println("   • Formatos: .txt, .json, .md, .csv, .xml, .yaml, .yml")
 	fmt.Println()
 	fmt.Println("⏹️  Presiona Ctrl+C para detener el servidor")
 	fmt.Println(strings.Repeat("=", 80))
@@ -496,6 +496,95 @@ func examplesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(examples)
 }
 
+// CONVERSOR SIMPLIFICADO - NO REQUIERE CONFIGURACIÓN
+func convertToGoHandler(w http.ResponseWriter, r *http.Request) {
+	setupCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parsear el formulario multipart
+	err := r.ParseMultipartForm(10 << 20) // 10 MB máximo
+	if err != nil {
+		respondWithError(w, "Error al parsear el formulario: "+err.Error(), "simplified_converter")
+		return
+	}
+
+	// Obtener el archivo del formulario
+	file, header, err := r.FormFile("txtFile")
+	if err != nil {
+		respondWithError(w, "Error al obtener el archivo: "+err.Error(), "simplified_converter")
+		return
+	}
+	defer file.Close()
+
+	// Verificar extensiones soportadas
+	fileName := strings.ToLower(header.Filename)
+	supportedExtensions := []string{".txt", ".json", ".md", ".csv", ".xml", ".yaml", ".yml"}
+	isSupported := false
+	for _, ext := range supportedExtensions {
+		if strings.HasSuffix(fileName, ext) {
+			isSupported = true
+			break
+		}
+	}
+
+	if !isSupported {
+		respondWithError(w, "Tipo de archivo no soportado. Archivos permitidos: .txt, .json, .md, .csv, .xml, .yaml, .yml", "simplified_converter")
+		return
+	}
+
+	// Verificar tamaño
+	if header.Size > 10*1024*1024 {
+		respondWithError(w, "El archivo es demasiado grande (máximo 10MB)", "simplified_converter")
+		return
+	}
+
+	// Leer el contenido del archivo
+	content := make([]byte, header.Size)
+	_, err = file.Read(content)
+	if err != nil {
+		respondWithError(w, "Error al leer el archivo: "+err.Error(), "simplified_converter")
+		return
+	}
+
+	// CONFIGURACIÓN AUTOMÁTICA PREDETERMINADA
+	packageName := "main"
+	variableName := "textContent"
+	conversionType := "variable"
+
+	// Convertir a código Go
+	startTime := time.Now()
+	goCode := convertTextToGo(string(content), packageName, variableName, conversionType, header.Filename)
+	conversionTime := time.Since(startTime)
+
+	// Responder con el código Go generado
+	response := map[string]interface{}{
+		"success":         true,
+		"method":          "simplified_auto_converter",
+		"original_file":   header.Filename,
+		"file_size":       header.Size,
+		"conversion_time": conversionTime.String(),
+		"go_code":         goCode,
+		"parameters": map[string]interface{}{
+			"package_name":    packageName,
+			"variable_name":   variableName,
+			"conversion_type": conversionType,
+			"auto_generated":  true,
+		},
+		"download_filename": generateGoFilename(header.Filename, conversionType),
+		"message":           "Archivo convertido automáticamente con configuración predeterminada",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Funciones auxiliares
 
 func setupCORS(w http.ResponseWriter) {
@@ -578,94 +667,20 @@ func determineComplexity(elementCount map[string]int) string {
 	}
 }
 
-func convertToGoHandler(w http.ResponseWriter, r *http.Request) {
-	setupCORS(w)
-	if r.Method == "OPTIONS" {
-		return
-	}
-
-	if r.Method != "POST" {
-		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Parsear el formulario multipart
-	err := r.ParseMultipartForm(10 << 20) // 10 MB máximo
-	if err != nil {
-		respondWithError(w, "Error al parsear el formulario: "+err.Error(), "txt_to_go_converter")
-		return
-	}
-
-	// Obtener el archivo del formulario
-	file, header, err := r.FormFile("txtFile")
-	if err != nil {
-		respondWithError(w, "Error al obtener el archivo: "+err.Error(), "txt_to_go_converter")
-		return
-	}
-	defer file.Close()
-
-	// Verificar que sea un archivo .txt
-	if !strings.HasSuffix(strings.ToLower(header.Filename), ".txt") {
-		respondWithError(w, "Solo se permiten archivos .txt", "txt_to_go_converter")
-		return
-	}
-
-	// Leer el contenido del archivo
-	content := make([]byte, header.Size)
-	_, err = file.Read(content)
-	if err != nil {
-		respondWithError(w, "Error al leer el archivo: "+err.Error(), "txt_to_go_converter")
-		return
-	}
-
-	// Obtener parámetros opcionales del formulario
-	packageName := r.FormValue("packageName")
-	if packageName == "" {
-		packageName = "main"
-	}
-
-	variableName := r.FormValue("variableName")
-	if variableName == "" {
-		variableName = "textContent"
-	}
-
-	conversionType := r.FormValue("conversionType")
-	if conversionType == "" {
-		conversionType = "variable"
-	}
-
-	// Convertir a código Go
-	startTime := time.Now()
-	goCode := convertTextToGo(string(content), packageName, variableName, conversionType, header.Filename)
-	conversionTime := time.Since(startTime)
-
-	// Responder con el código Go generado
-	response := map[string]interface{}{
-		"success":         true,
-		"method":          "txt_to_go_converter",
-		"original_file":   header.Filename,
-		"file_size":       header.Size,
-		"conversion_time": conversionTime.String(),
-		"go_code":         goCode,
-		"parameters": map[string]interface{}{
-			"package_name":    packageName,
-			"variable_name":   variableName,
-			"conversion_type": conversionType,
-		},
-		"download_filename": generateGoFilename(header.Filename, conversionType),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func convertTextToGo(content, packageName, variableName, conversionType, originalFilename string) string {
 	var builder strings.Builder
 
 	// Header del archivo Go
 	builder.WriteString(fmt.Sprintf("package %s\n\n", packageName))
 	builder.WriteString(fmt.Sprintf("// Archivo generado automáticamente desde: %s\n", originalFilename))
-	builder.WriteString(fmt.Sprintf("// Generado el: %s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+	builder.WriteString(fmt.Sprintf("// Generado el: %s\n", time.Now().Format("2006-01-02 15:04:05")))
+	builder.WriteString("// Conversión automática con configuración predeterminada\n\n")
+
+	// Para el conversor simplificado, siempre usar 'variable' pero mantener la lógica completa
+	// por si se quiere extender en el futuro
+	if conversionType == "" {
+		conversionType = "variable" // Valor por defecto
+	}
 
 	switch conversionType {
 	case "variable":
@@ -677,14 +692,14 @@ func convertTextToGo(content, packageName, variableName, conversionType, origina
 		builder.WriteString(fmt.Sprintf("const %s = `%s`\n", variableName, content))
 
 	case "function":
-		funcName := strings.Title(variableName)
+		funcName := capitalizeFirst(variableName)
 		builder.WriteString(fmt.Sprintf("// Get%s retorna el contenido del archivo de texto\n", funcName))
 		builder.WriteString(fmt.Sprintf("func Get%s() string {\n", funcName))
 		builder.WriteString(fmt.Sprintf("\treturn `%s`\n", content))
 		builder.WriteString("}\n")
 
 	case "struct":
-		structName := strings.Title(variableName)
+		structName := capitalizeFirst(variableName)
 		builder.WriteString(fmt.Sprintf("// %s contiene datos de texto estructurados\n", structName))
 		builder.WriteString(fmt.Sprintf("type %s struct {\n", structName))
 		builder.WriteString("\tContent  string\n")
@@ -722,15 +737,24 @@ func convertTextToGo(content, packageName, variableName, conversionType, origina
 		builder.WriteString("}\n")
 
 	default:
-		// Por defecto, usar variable
+		// Por defecto, usar variable (configuración automática)
+		builder.WriteString(fmt.Sprintf("// %s contiene el contenido del archivo (generado automáticamente)\n", variableName))
 		builder.WriteString(fmt.Sprintf("var %s = `%s`\n", variableName, content))
 	}
 
 	return builder.String()
 }
 
+// capitalizeFirst capitaliza la primera letra de una cadena
+func capitalizeFirst(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 func generateGoFilename(originalFilename, conversionType string) string {
-	baseName := strings.TrimSuffix(originalFilename, ".txt")
+	baseName := strings.TrimSuffix(originalFilename, getFileExtension(originalFilename))
 	baseName = strings.ReplaceAll(baseName, " ", "_")
 	baseName = strings.ReplaceAll(baseName, "-", "_")
 
@@ -747,7 +771,34 @@ func generateGoFilename(originalFilename, conversionType string) string {
 		}
 	}
 
-	return strings.ToLower(result.String()) + ".go"
+	filename := strings.ToLower(result.String())
+
+	// Agregar sufijo basado en el tipo de conversión para diferenciación
+	switch conversionType {
+	case "const":
+		filename += "_const"
+	case "function":
+		filename += "_func"
+	case "struct":
+		filename += "_struct"
+	case "slice":
+		filename += "_slice"
+	case "map":
+		filename += "_map"
+	default:
+		// Para "variable" o cualquier otro caso, no agregar sufijo
+		// Mantiene el nombre original limpio
+	}
+
+	return filename + ".go"
+}
+
+func getFileExtension(filename string) string {
+	lastDot := strings.LastIndex(filename, ".")
+	if lastDot == -1 {
+		return ""
+	}
+	return filename[lastDot:]
 }
 
 func compareResults(result1, result2 interface{}) bool {

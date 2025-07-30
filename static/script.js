@@ -1,198 +1,408 @@
-let examples = [];
+// ===== SOLUCIÓN INMEDIATA - DEFINIR FUNCIÓN GLOBAL AL INICIO =====
+console.log('🚀 Definiendo convertFile inmediatamente...');
 
-// Cargar ejemplos al inicio
-document.addEventListener('DOMContentLoaded', function() {
-    loadExamples();
-    updateStats();
-    loadTheme();
+window.convertFile = function() {
+    console.log('🔄 convertFile ejecutándose...');
     
-    // Actualizar estadísticas cuando el usuario escriba
-    document.getElementById('jsonInput').addEventListener('input', updateStats);
-});
+    const fileInput = document.getElementById('txtFile');
+    const statusElement = document.getElementById('converterStatusIndicator');
+    
+    // Validaciones básicas
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        if (statusElement) {
+            statusElement.className = 'alert alert-warning mb-3';
+            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Por favor selecciona un archivo primero';
+        }
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const fileName = file.name.toLowerCase();
+    
+    // Verificar extensión
+    const supportedExtensions = ['.txt', '.json', '.md', '.csv', '.xml', '.yaml', '.yml'];
+    const isSupported = supportedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isSupported) {
+        if (statusElement) {
+            statusElement.className = 'alert alert-danger mb-3';
+            statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Archivo no soportado. Use: .txt, .json, .md, .csv, .xml, .yaml, .yml';
+        }
+        return;
+    }
+    
+    // Verificar tamaño
+    if (file.size > 10 * 1024 * 1024) {
+        if (statusElement) {
+            statusElement.className = 'alert alert-danger mb-3';
+            statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Archivo muy grande (máximo 10MB)';
+        }
+        return;
+    }
+    
+    // Mostrar estado de conversión
+    if (statusElement) {
+        statusElement.className = 'alert alert-info mb-3';
+        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Convirtiendo archivo...';
+    }
+    
+    // Crear FormData y enviar
+    const formData = new FormData();
+    formData.append('txtFile', file);
+    
+    fetch('/api/convert-to-go', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('✅ Conversión exitosa:', result);
+        
+        if (result.success) {
+            // Mostrar éxito
+            if (statusElement) {
+                statusElement.className = 'alert alert-success mb-3';
+                statusElement.innerHTML = '<i class="fas fa-check me-2"></i>¡Conversión exitosa!';
+            }
+            
+            // Mostrar código generado
+            showGeneratedCode(result);
+        } else {
+            // Mostrar error del servidor
+            if (statusElement) {
+                statusElement.className = 'alert alert-danger mb-3';
+                statusElement.innerHTML = '<i class="fas fa-times me-2"></i>' + (result.error || 'Error en la conversión');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error:', error);
+        if (statusElement) {
+            statusElement.className = 'alert alert-danger mb-3';
+            statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Error: ' + error.message;
+        }
+    });
+};
 
-// Funciones del tema
-function toggleTheme() {
+// ===== FUNCIÓN PARA MOSTRAR CÓDIGO GENERADO =====
+function showGeneratedCode(result) {
+    const contentElement = document.getElementById('generatedCodeContent');
+    if (!contentElement) return;
+    
+    const goCode = result.go_code || 'Error: No se generó código';
+    const filename = result.download_filename || 'generated_code.go';
+    
+    contentElement.innerHTML = `
+        <div class="alert alert-success mb-3">
+            <h6><i class="fas fa-check-circle me-2"></i>¡Archivo convertido exitosamente!</h6>
+            <p class="mb-0">Tu archivo ha sido convertido a código Go automáticamente.</p>
+        </div>
+        
+        <div class="card border-primary mb-3">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fab fa-golang me-2"></i>Código Go Generado</h6>
+                    <div>
+                        <button class="btn btn-light btn-sm me-2" onclick="copyCode()">
+                            <i class="fas fa-copy me-1"></i>Copiar
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="downloadCode('${filename}')">
+                            <i class="fas fa-download me-1"></i>Descargar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <pre id="generatedCode" style="margin: 0; padding: 15px; background: #f8f9fa; max-height: 400px; overflow-y: auto; font-size: 14px;">${escapeHtml(goCode)}</pre>
+            </div>
+        </div>
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">Información</h6>
+                    </div>
+                    <div class="card-body">
+                        <small><strong>Archivo:</strong> ${result.original_file || 'archivo'}</small><br>
+                        <small><strong>Tamaño:</strong> ${formatBytes(result.file_size || 0)}</small><br>
+                        <small><strong>Package:</strong> main (automático)</small><br>
+                        <small><strong>Variable:</strong> textContent (automático)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Siguiente Paso</h6>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success btn-sm w-100 mb-2" onclick="copyCode()">
+                            <i class="fas fa-copy me-2"></i>Copiar Código
+                        </button>
+                        <button class="btn btn-primary btn-sm w-100 mb-2" onclick="downloadCode('${filename}')">
+                            <i class="fas fa-download me-2"></i>Descargar ${filename}
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetForm()">
+                            <i class="fas fa-refresh me-2"></i>Nuevo Archivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ===== FUNCIONES AUXILIARES =====
+window.copyCode = function() {
+    const codeElement = document.getElementById('generatedCode');
+    if (codeElement) {
+        navigator.clipboard.writeText(codeElement.textContent)
+            .then(() => {
+                alert('Código copiado al portapapeles');
+            })
+            .catch(() => {
+                alert('No se pudo copiar automáticamente. Selecciona el texto manualmente.');
+            });
+    }
+};
+
+window.downloadCode = function(filename) {
+    const codeElement = document.getElementById('generatedCode');
+    if (codeElement) {
+        const blob = new Blob([codeElement.textContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'generated_code.go';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert('Archivo descargado');
+    }
+};
+
+window.resetForm = function() {
+    const form = document.getElementById('txtUploadForm');
+    const content = document.getElementById('generatedCodeContent');
+    const status = document.getElementById('converterStatusIndicator');
+    
+    if (form) form.reset();
+    if (status) {
+        status.className = 'alert alert-info mb-3';
+        status.innerHTML = '<i class="fas fa-upload me-2"></i>Sube un archivo para convertir...';
+    }
+    if (content) {
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fab fa-golang fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted mb-3">Conversor Simplificado</h5>
+                <p class="text-muted">Sube cualquier archivo de texto y se convertirá automáticamente a código Go.</p>
+            </div>
+        `;
+    }
+};
+
+// ===== FUNCIONES DEL PARSER JSON =====
+window.parseJSON = function() {
+    const input = document.getElementById('jsonInput');
+    if (!input) return;
+    
+    const jsonText = input.value.trim();
+    if (!jsonText) {
+        alert('Por favor ingresa un JSON');
+        return;
+    }
+    
+    fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ json: jsonText })
+    })
+    .then(response => response.json())
+    .then(result => {
+        const resultElement = document.getElementById('resultContent');
+        if (resultElement) {
+            if (result.success) {
+                resultElement.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6>✅ JSON parseado exitosamente</h6>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Resultado</div>
+                        <div class="card-body">
+                            <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${JSON.stringify(result.result, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultElement.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>❌ Error de parseo</h6>
+                        <p class="mb-0">${result.error}</p>
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const resultElement = document.getElementById('resultContent');
+        if (resultElement) {
+            resultElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>❌ Error de conexión</h6>
+                    <p class="mb-0">${error.message}</p>
+                </div>
+            `;
+        }
+    });
+};
+
+window.clearInput = function() {
+    const input = document.getElementById('jsonInput');
+    const result = document.getElementById('resultContent');
+    
+    if (input) input.value = '';
+    if (result) {
+        result.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-trash-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Área limpiada</h5>
+                <p class="text-muted">Ingresa un nuevo JSON para parsear.</p>
+            </div>
+        `;
+    }
+    updateStats();
+};
+
+window.formatJSON = function() {
+    const input = document.getElementById('jsonInput');
+    if (!input) return;
+    
+    try {
+        const parsed = JSON.parse(input.value);
+        input.value = JSON.stringify(parsed, null, 2);
+        updateStats();
+        alert('JSON formateado correctamente');
+    } catch (error) {
+        alert('JSON inválido, no se puede formatear');
+    }
+};
+
+window.toggleTheme = function() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     updateThemeIcon(newTheme);
+};
+
+// ===== FUNCIONES AUXILIARES =====
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function updateStats() {
+    const input = document.getElementById('jsonInput');
+    const charCount = document.getElementById('charCount');
+    const lineCount = document.getElementById('lineCount');
+    
+    if (input && charCount && lineCount) {
+        const value = input.value;
+        charCount.textContent = value.length.toLocaleString();
+        lineCount.textContent = ((value.match(/\n/g) || []).length + 1).toLocaleString();
+    }
 }
 
 function updateThemeIcon(theme) {
     const icon = document.getElementById('themeIcon');
     const text = document.getElementById('themeText');
     
-    if (theme === 'dark') {
-        icon.className = 'fas fa-sun';
-        text.textContent = 'Modo Día';
-    } else {
-        icon.className = 'fas fa-moon';
-        text.textContent = 'Modo Noche';
+    if (icon && text) {
+        if (theme === 'dark') {
+            icon.className = 'fas fa-sun';
+            text.textContent = 'Modo Día';
+        } else {
+            icon.className = 'fas fa-moon';
+            text.textContent = 'Modo Noche';
+        }
     }
 }
 
-function updateStats() {
-    const input = document.getElementById('jsonInput').value;
-    document.getElementById('charCount').textContent = input.length.toLocaleString();
-    document.getElementById('lineCount').textContent = ((input.match(/\n/g) || []).length + 1).toLocaleString();
-}
+// ===== INICIALIZACIÓN =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM cargado, inicializando...');
+    
+    // Cargar tema
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+    
+    // Configurar input JSON
+    const jsonInput = document.getElementById('jsonInput');
+    if (jsonInput) {
+        jsonInput.addEventListener('input', updateStats);
+    }
+    
+    // Actualizar estadísticas
+    updateStats();
+    
+    // Cargar ejemplos
+    loadExamples();
+    
+    console.log('✅ Inicialización completa');
+});
 
 async function loadExamples() {
     try {
-        console.log('🔄 Cargando ejemplos desde el servidor...');
-        updateStatus('info', '<i class="fas fa-spinner fa-spin me-2"></i>Cargando ejemplos...');
-        
         const response = await fetch('/api/examples');
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.ok) {
+            const examples = await response.json();
+            console.log('✅ Ejemplos cargados:', examples);
+            renderExamples(examples);
         }
-        
-        const data = await response.json();
-        console.log('✅ Ejemplos cargados desde servidor:', data);
-        examples = data;
-        renderExamples();
-        
-        updateStatus('success', '<i class="fas fa-check me-2"></i>Ejemplos cargados correctamente');
-        setTimeout(() => {
-            updateStatus('info', '<i class="fas fa-clock me-2"></i>Esperando entrada...');
-        }, 2000);
-        
     } catch (error) {
-        console.error('❌ Error cargando ejemplos:', error);
-        updateStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>Usando ejemplos por defecto');
+        console.log('⚠️ Error cargando ejemplos:', error);
         renderDefaultExamples();
-        
-        setTimeout(() => {
-            updateStatus('info', '<i class="fas fa-clock me-2"></i>Esperando entrada...');
-        }, 2000);
     }
 }
 
-function showExamplesModal() {
-    console.log('📚 Mostrando modal de ejemplos');
-    populateExamplesModal();
-}
-
-function populateExamplesModal() {
-    const validContainer = document.getElementById('validExamples');
-    const invalidContainer = document.getElementById('invalidExamples');
-    
-    validContainer.innerHTML = '';
-    invalidContainer.innerHTML = '';
-
-    // Mostrar ejemplos válidos
-    if (examples.ejemplos && examples.ejemplos.length > 0) {
-        examples.ejemplos.forEach((example, index) => {
-            const card = createExampleCard(example, index, 'valid');
-            validContainer.appendChild(card);
-        });
-    } else {
-        validContainer.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>No hay ejemplos válidos disponibles.</div>';
-    }
-
-    // Mostrar ejemplos inválidos
-    if (examples.ejemplos_invalidos && examples.ejemplos_invalidos.length > 0) {
-        examples.ejemplos_invalidos.forEach((example, index) => {
-            const card = createExampleCard(example, index, 'invalid');
-            invalidContainer.appendChild(card);
-        });
-    } else {
-        invalidContainer.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>No hay ejemplos inválidos disponibles.</div>';
-    }
-}
-
-function createExampleCard(example, index, type) {
-    const card = document.createElement('div');
-    card.className = 'card mb-3';
-    
-    const borderClass = type === 'valid' ? 'border-success' : 'border-danger';
-    card.classList.add(borderClass);
-    
-    const headerClass = type === 'valid' ? 'bg-success' : 'bg-danger';
-    const icon = type === 'valid' ? 'fa-check' : 'fa-times';
-    
-    card.innerHTML = `
-        <div class="card-header ${headerClass} text-white py-2">
-            <div class="d-flex justify-content-between align-items-center">
-                <small class="fw-bold"><i class="fas ${icon} me-1"></i>${example.nombre}</small>
-                <button class="btn btn-sm btn-light" onclick="selectExampleFromModal('${type}', ${index})" data-bs-dismiss="modal">
-                    <i class="fas fa-arrow-right me-1"></i>Usar
-                </button>
-            </div>
-        </div>
-        <div class="card-body py-2">
-            <div class="code-container">
-                <pre class="mb-0 p-3" style="font-size: 0.8em; max-height: 120px; overflow-y: auto;">${example.json}</pre>
-            </div>
-        </div>
-    `;
-    
-    return card;
-}
-
-function selectExampleFromModal(type, index) {
-    let selectedExample;
-    
-    if (type === 'valid') {
-        selectedExample = examples.ejemplos[index];
-    } else {
-        selectedExample = examples.ejemplos_invalidos[index];
-    }
-    
-    console.log(`📝 Seleccionando ejemplo ${type}:`, selectedExample);
-    setExample(selectedExample.json);
-    
-    // Mostrar mensaje informativo
-    if (type === 'invalid') {
-        updateStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>¡Cuidado! Este es un ejemplo inválido para probar errores');
-    } else {
-        updateStatus('success', '<i class="fas fa-check me-2"></i>Ejemplo cargado - presiona "Parsear JSON"');
-    }
-}
-
-function renderExamples() {
+function renderExamples(examples) {
     const grid = document.getElementById('examplesGrid');
-    grid.innerHTML = '';
-
-    let examplesList = [];
+    if (!grid || !examples.ejemplos) return;
     
-    // Verificar diferentes estructuras de respuesta
-    if (examples.ejemplos && Array.isArray(examples.ejemplos)) {
-        examplesList = examples.ejemplos;
-    } else if (Array.isArray(examples)) {
-        examplesList = examples;
-    } else {
-        console.log('Estructura de ejemplos no reconocida:', examples);
-        renderDefaultExamples();
-        return;
-    }
-
-    console.log('Renderizando ejemplos:', examplesList);
-
-    if (examplesList.length === 0) {
-        renderDefaultExamples();
-        return;
-    }
-
-    examplesList.slice(0, 6).forEach((example, index) => {
+    grid.innerHTML = '';
+    examples.ejemplos.slice(0, 6).forEach((example, index) => {
         const col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4 mb-2';
         
         const btn = document.createElement('button');
-        btn.className = 'btn example-btn btn-sm w-100';
-        btn.innerHTML = `<i class="fas fa-play me-1"></i>${example.nombre || example.name || `Ejemplo ${index + 1}`}`;
+        btn.className = 'btn btn-outline-primary btn-sm w-100';
+        btn.innerHTML = `<i class="fas fa-play me-1"></i>${example.nombre}`;
         btn.onclick = () => {
-            console.log('Cargando ejemplo:', example);
-            setExample(example.json);
+            const input = document.getElementById('jsonInput');
+            if (input) {
+                input.value = example.json;
+                updateStats();
+                setTimeout(() => window.parseJSON(), 500);
+            }
         };
         
         col.appendChild(btn);
@@ -201,340 +411,47 @@ function renderExamples() {
 }
 
 function renderDefaultExamples() {
-    console.log('📋 Renderizando ejemplos por defecto');
+    const grid = document.getElementById('examplesGrid');
+    if (!grid) return;
+    
     const defaultExamples = [
         { nombre: 'Objeto Simple', json: '{"name": "Juan", "age": 30}' },
         { nombre: 'Array', json: '["a", "b", "c"]' },
-        { nombre: 'Anidado', json: '{"user": {"name": "Ana"}}' },
-        { nombre: 'Mixto', json: '{"str": "texto", "num": 42, "bool": true}' }
+        { nombre: 'Anidado', json: '{"user": {"name": "Ana"}}' }
     ];
-
-    const grid = document.getElementById('examplesGrid');
+    
     grid.innerHTML = '';
-
-    defaultExamples.forEach((example, index) => {
+    defaultExamples.forEach(example => {
         const col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4 mb-2';
         
         const btn = document.createElement('button');
-        btn.className = 'btn example-btn btn-sm w-100';
+        btn.className = 'btn btn-outline-primary btn-sm w-100';
         btn.innerHTML = `<i class="fas fa-play me-1"></i>${example.nombre}`;
         btn.onclick = () => {
-            console.log('🎯 Cargando ejemplo por defecto:', example);
-            setExample(example.json);
+            const input = document.getElementById('jsonInput');
+            if (input) {
+                input.value = example.json;
+                updateStats();
+                setTimeout(() => window.parseJSON(), 500);
+            }
         };
         
         col.appendChild(btn);
         grid.appendChild(col);
     });
-
-    // Mensaje informativo
-    const infoCol = document.createElement('div');
-    infoCol.className = 'col-12 mt-2';
-    infoCol.innerHTML = '<div class="alert alert-warning"><small><i class="fas fa-info-circle me-2"></i>Ejemplos por defecto (servidor no disponible)</small></div>';
-    grid.appendChild(infoCol);
 }
 
-function setExample(jsonString) {
-    console.log('Estableciendo ejemplo:', jsonString);
-    document.getElementById('jsonInput').value = jsonString;
-    updateStats();
-    // Auto-parsear después de un breve delay
-    setTimeout(() => parseJSON(), 500);
-}
+// ===== VERIFICACIÓN FINAL =====
+console.log('✅ Script cargado completamente');
+console.log('✅ convertFile disponible:', typeof window.convertFile === 'function');
+console.log('✅ parseJSON disponible:', typeof window.parseJSON === 'function');
+console.log('🎯 Listo para usar - el botón debería funcionar ahora');
 
-function clearInput() {
-    document.getElementById('jsonInput').value = '';
-    document.getElementById('resultContent').innerHTML = `
-        <div class="text-center py-4">
-            <i class="fas fa-trash-alt fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted mb-3">Área limpiada</h5>
-            <p class="text-muted">Ingresa un nuevo JSON para parsear.</p>
-        </div>
-    `;
-    document.getElementById('resultContainer').className = 'result-container';
-    updateStatus('info', '<i class="fas fa-clock me-2"></i>Esperando entrada...');
-    updateStats();
-}
-
-function formatJSON() {
-    const input = document.getElementById('jsonInput').value.trim();
-    if (!input) {
-        updateStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>No hay contenido para formatear');
-        return;
-    }
-
-    try {
-        const parsed = JSON.parse(input);
-        const formatted = JSON.stringify(parsed, null, 2);
-        document.getElementById('jsonInput').value = formatted;
-        updateStats();
-        updateStatus('success', '<i class="fas fa-check me-2"></i>JSON formateado correctamente');
-    } catch (error) {
-        updateStatus('danger', '<i class="fas fa-times me-2"></i>No se puede formatear: JSON inválido');
-    }
-}
-
-async function parseJSON() {
-    const input = document.getElementById('jsonInput').value.trim();
-    
-    if (!input) {
-        updateStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>Por favor ingresa un JSON');
-        return;
-    }
-
-    // Mostrar estado de carga
-    updateStatus('info', '<i class="fas fa-spinner fa-spin me-2"></i>Parseando...');
-
-    try {
-        console.log('Enviando JSON para parsear:', input);
-        
-        const response = await fetch('/api/parse', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ json: input })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Resultado del parseo:', result);
-        
-        if (result.success) {
-            displaySuccess(result.result);
-        } else {
-            displayError(result.error);
-        }
-    } catch (error) {
-        console.error('Error en parseJSON:', error);
-        displayError('Error de conexión: ' + error.message);
-    }
-}
-
-function displaySuccess(result) {
-    updateStatus('success', '<i class="fas fa-check me-2"></i>JSON parseado exitosamente');
-    
-    const container = document.getElementById('resultContainer');
-    const content = document.getElementById('resultContent');
-    
-    container.className = 'result-container';
-    
-    // Formatear el resultado de manera legible
-    const formattedResult = formatGoValue(result, 0);
-    content.innerHTML = `
-        <div class="alert alert-success mb-4" role="alert">
-            <h6 class="alert-heading mb-2">
-                <i class="fas fa-check-circle me-2"></i>¡Parseo exitoso!
-            </h6>
-            <p class="mb-0">El JSON ha sido procesado correctamente por el parser personalizado.</p>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-lg-6">
-                <div class="card border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0">
-                            <i class="fas fa-code me-2"></i>Resultado (estructura Go)
-                        </h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="code-container">
-                            <pre class="mb-0 p-3" style="font-size: 0.85rem; max-height: 400px; overflow-y: auto;">${formattedResult}</pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-6">
-                <div class="card border-info">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">
-                            <i class="fas fa-file-code me-2"></i>JSON formateado
-                        </h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="code-container">
-                            <pre class="mb-0 p-3" style="font-size: 0.85rem; max-height: 400px; overflow-y: auto;">${JSON.stringify(result, null, 2)}</pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="alert alert-light border mt-4">
-            <div class="row text-center g-3">
-                <div class="col-md-4">
-                    <i class="fas fa-check-circle text-success me-2"></i>
-                    <small><strong>Sintaxis válida</strong></small>
-                </div>
-                <div class="col-md-4">
-                    <i class="fas fa-cogs text-primary me-2"></i>
-                    <small><strong>Parser personalizado</strong></small>
-                </div>
-                <div class="col-md-4">
-                    <i class="fas fa-bolt text-warning me-2"></i>
-                    <small><strong>Procesado en tiempo real</strong></small>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function displayError(error) {
-    updateStatus('danger', '<i class="fas fa-times me-2"></i>Error en el parseo');
-    
-    const container = document.getElementById('resultContainer');
-    const content = document.getElementById('resultContent');
-    
-    container.className = 'result-container';
-    content.innerHTML = `
-        <div class="alert alert-danger mb-4" role="alert">
-            <h6 class="alert-heading mb-2">
-                <i class="fas fa-exclamation-triangle me-2"></i>Error de parseo detectado
-            </h6>
-            <p class="mb-0">El parser encontró un problema en la sintaxis del JSON.</p>
-        </div>
-
-        <div class="card border-danger mb-4">
-            <div class="card-header bg-danger text-white">
-                <h6 class="mb-0">
-                    <i class="fas fa-bug me-2"></i>Detalle del error
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="code-container">
-                    <pre class="mb-0 p-3 text-danger" style="font-size: 0.9rem; white-space: pre-wrap; background: #fff5f5;">${error}</pre>
-                </div>
-            </div>
-        </div>
-
-        <div class="card border-warning">
-            <div class="card-header bg-warning">
-                <h6 class="mb-0">
-                    <i class="fas fa-lightbulb me-2"></i>Consejos para corregir
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>Verifica que todas las llaves <code>{}</code> y corchetes <code>[]</code> estén balanceados</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>Asegúrate de que las cadenas estén entre comillas dobles <code>"</code></small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>No uses comas adicionales al final de objetos o arrays</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>Verifica la sintaxis de números y valores booleanos</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>Revisa los caracteres de escape en strings</small>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i class="fas fa-check text-success me-2 mt-1"></i>
-                            <small>Usa el formateo automático para detectar problemas</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="text-center mt-4">
-            <button class="btn btn-outline-primary me-2" onclick="showExamplesModal()" data-bs-toggle="modal" data-bs-target="#examplesModal">
-                <i class="fas fa-book me-2"></i>Ver ejemplos válidos
-            </button>
-            <button class="btn btn-outline-secondary" onclick="formatJSON()">
-                <i class="fas fa-magic me-2"></i>Intentar formatear
-            </button>
-        </div>
-    `;
-}
-
-function updateStatus(type, message) {
-    const indicator = document.getElementById('statusIndicator');
-    const alertClasses = {
-        'info': 'alert-info',
-        'success': 'alert-success', 
-        'warning': 'alert-warning',
-        'danger': 'alert-danger'
-    };
-    
-    indicator.className = `alert ${alertClasses[type]} mb-3`;
-    indicator.innerHTML = message;
-}
-
-function formatGoValue(value, indent = 0) {
-    const spaces = '  '.repeat(indent);
-    const nextSpaces = '  '.repeat(indent + 1);
-    
-    if (value === null) {
-        return 'nil';
-    } else if (typeof value === 'boolean') {
-        return value.toString();
-    } else if (typeof value === 'number') {
-        return value.toString();
-    } else if (typeof value === 'string') {
-        return `"${value}"`;
-    } else if (Array.isArray(value)) {
-        if (value.length === 0) {
-            return '[]interface{}{}';
-        }
-        let result = '[]interface{}{\n';
-        value.forEach((item, index) => {
-            result += nextSpaces + formatGoValue(item, indent + 1);
-            if (index < value.length - 1) result += ',';
-            result += '\n';
-        });
-        result += spaces + '}';
-        return result;
-    } else if (typeof value === 'object') {
-        const keys = Object.keys(value);
-        if (keys.length === 0) {
-            return 'map[string]interface{}{}';
-        }
-        let result = 'map[string]interface{}{\n';
-        keys.forEach((key, index) => {
-            result += nextSpaces + `"${key}": ${formatGoValue(value[key], indent + 1)}`;
-            if (index < keys.length - 1) result += ',';
-            result += '\n';
-        });
-        result += spaces + '}';
-        return result;
-    }
-    return String(value);
-}
-
-// Atajos de teclado
+// ===== ATAJOS DE TECLADO =====
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
-        parseJSON();
-    } else if (e.ctrlKey && e.key === 'l') {
-        e.preventDefault();
-        clearInput();
-    } else if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        formatJSON();
+        window.parseJSON();
     }
 });
