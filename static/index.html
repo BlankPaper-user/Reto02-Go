@@ -51,7 +51,7 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="converter-tab" data-bs-toggle="tab" data-bs-target="#txt-converter" type="button" role="tab">
-                            <i class="fas fa-file-code me-2"></i>Conversor TXT → Go
+                            <i class="fas fa-file-code me-2"></i>Conversor Archivo → Go
                         </button>
                     </li>
                 </ul>
@@ -205,7 +205,7 @@ Ejemplo:
                 </div>
             </div>
 
-            <!-- TXT to Go Converter Tab -->
+            <!-- File to Go Converter Tab -->
             <div class="tab-pane fade" id="txt-converter" role="tabpanel">
                 <div class="row g-4">
                     <!-- Upload Section -->
@@ -213,7 +213,7 @@ Ejemplo:
                         <div class="card h-100">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-file-upload me-2"></i>Subir Archivo TXT
+                                    <i class="fas fa-file-upload me-2"></i>Subir Archivo
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -221,10 +221,14 @@ Ejemplo:
                                 <form id="txtUploadForm" enctype="multipart/form-data">
                                     <div class="mb-4">
                                         <label for="txtFile" class="form-label">
-                                            <i class="fas fa-file-alt me-2"></i>Seleccionar archivo .txt
+                                            <i class="fas fa-file-alt me-2"></i>Seleccionar archivo
                                         </label>
-                                        <input type="file" class="form-control" id="txtFile" name="txtFile" accept=".txt" required>
-                                        <div class="form-text">Solo se permiten archivos de texto (.txt). Tamaño máximo: 10MB</div>
+                                        <input type="file" class="form-control" id="txtFile" name="txtFile" 
+                                               accept=".txt,.json,.md,.csv,.xml,.yaml,.yml" required>
+                                        <div class="form-text">
+                                            <strong>Archivos soportados:</strong> .txt, .json, .md, .csv, .xml, .yaml, .yml 
+                                            <br><strong>Tamaño máximo:</strong> 10MB
+                                        </div>
                                     </div>
 
                                     <!-- Configuration Options -->
@@ -259,7 +263,7 @@ Ejemplo:
                                     </div>
 
                                     <!-- Convert Button -->
-                                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                                    <button type="button" class="btn btn-primary w-100 mb-3" onclick="convertFile()">
                                         <i class="fas fa-magic me-2"></i>Convertir a Go
                                     </button>
                                 </form>
@@ -274,6 +278,37 @@ Ejemplo:
                                     <div class="card-body">
                                         <div class="row g-3" id="fileInfoContent">
                                             <!-- Se llenará dinámicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Supported Formats Info -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-file-import me-2"></i>Formatos Soportados
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>TXT:</strong> Texto plano</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>JSON:</strong> Datos JSON</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>MD:</strong> Markdown</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>CSV:</strong> Datos CSV</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>XML:</strong> Documentos XML</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="d-block"><strong>YAML:</strong> Config YAML</small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -323,7 +358,7 @@ Ejemplo:
                             <div class="card-body">
                                 <!-- Status Indicator -->
                                 <div class="alert alert-info mb-3" role="alert" id="converterStatusIndicator">
-                                    <i class="fas fa-upload me-2"></i>Sube un archivo .txt para generar código Go...
+                                    <i class="fas fa-upload me-2"></i>Sube un archivo para generar código Go...
                                 </div>
 
                                 <!-- Generated Code Container -->
@@ -331,9 +366,9 @@ Ejemplo:
                                     <div id="generatedCodeContent">
                                         <div class="text-center py-4">
                                             <i class="fab fa-golang fa-3x text-muted mb-3"></i>
-                                            <h5 class="text-muted mb-3">Conversor TXT → Go</h5>
+                                            <h5 class="text-muted mb-3">Conversor Archivo → Go</h5>
                                             <p class="text-muted mb-3">
-                                                Sube un archivo de texto y convierte su contenido a código Go.
+                                                Sube cualquier archivo de texto y convierte su contenido a código Go.
                                             </p>
                                             
                                             <div class="divider"></div>
@@ -342,13 +377,13 @@ Ejemplo:
                                                 <div class="col-md-6">
                                                     <div class="feature-item">
                                                         <i class="fas fa-file-code text-primary mb-2"></i>
-                                                        <div><small><strong>Variables y Constantes</strong></small></div>
+                                                        <div><small><strong>TXT, JSON, MD</strong></small></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="feature-item">
                                                         <i class="fas fa-function text-primary mb-2"></i>
-                                                        <div><small><strong>Funciones</strong></small></div>
+                                                        <div><small><strong>CSV, XML, YAML</strong></small></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
@@ -360,7 +395,7 @@ Ejemplo:
                                                 <div class="col-md-6">
                                                     <div class="feature-item">
                                                         <i class="fas fa-list text-primary mb-2"></i>
-                                                        <div><small><strong>Slices y Maps</strong></small></div>
+                                                        <div><small><strong>Variables y Funciones</strong></small></div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -394,8 +429,8 @@ Ejemplo:
                 </div>
                 <div class="col-md-3 text-center">
                     <i class="fas fa-file-code fa-2x text-info mb-3"></i>
-                    <h6 class="fw-bold">Conversor TXT → Go</h6>
-                    <small class="text-muted">Genera código Go automáticamente</small>
+                    <h6 class="fw-bold">Conversor Multi-formato</h6>
+                    <small class="text-muted">TXT, JSON, MD, CSV, XML, YAML → Go</small>
                 </div>
             </div>
             
@@ -406,7 +441,7 @@ Ejemplo:
                     <strong>Desarrollado como parte del Reto #2 - TLP Go</strong>
                 </p>
                 <p class="text-muted small mb-0">
-                    Parser JSON y Conversor TXT → Go implementados desde cero
+                    Parser JSON y Conversor Multi-formato implementados desde cero
                 </p>
             </div>
         </div>

@@ -1,16 +1,65 @@
 let examples = [];
 
-// Cargar ejemplos al inicio
+// ===== FUNCIONES GLOBALES (DISPONIBLES DESDE HTML) =====
+window.convertFile = function() {
+    console.log('🔄 Función convertFile() llamada globalmente');
+    const form = document.getElementById('txtUploadForm');
+    if (form) {
+        const event = new Event('submit', { bubbles: true, cancelable: true });
+        handleTxtConversion(event);
+    }
+};
+
+// Hacer todas las funciones principales disponibles globalmente
+window.parseJSON = parseJSON;
+window.clearInput = clearInput;  
+window.formatJSON = formatJSON;
+window.showExamplesModal = showExamplesModal;
+window.selectExampleFromModal = selectExampleFromModal;
+window.toggleTheme = toggleTheme;
+window.copyGoCode = copyGoCode;
+window.downloadGoCode = downloadGoCode;
+window.resetConverter = resetConverter;
+
+// ===== INICIALIZACIÓN =====
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inicializando aplicación...');
+    
     loadExamples();
     updateStats();
     loadTheme();
     
     // Actualizar estadísticas cuando el usuario escriba
     document.getElementById('jsonInput').addEventListener('input', updateStats);
+    
+    // IMPORTANTE: Configurar el conversor TXT → Go
+    setupTxtConverter();
+    
+    console.log('✅ Aplicación inicializada correctamente');
+    console.log('✅ Función convertFile disponible globalmente:', typeof window.convertFile);
 });
 
-// Funciones del tema
+// ===== CONFIGURACIÓN DEL CONVERSOR TXT → Go =====
+function setupTxtConverter() {
+    const txtUploadForm = document.getElementById('txtUploadForm');
+    if (txtUploadForm) {
+        console.log('✅ Configurando conversor TXT → Go...');
+        
+        // Prevenir el envío normal del formulario
+        txtUploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🔄 Formulario interceptado, iniciando conversión...');
+            handleTxtConversion(event);
+        });
+        
+        console.log('✅ Conversor TXT → Go configurado correctamente');
+    } else {
+        console.error('❌ No se encontró el formulario txtUploadForm');
+    }
+}
+
+// ===== FUNCIONES DEL TEMA =====
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -39,12 +88,14 @@ function updateThemeIcon(theme) {
     }
 }
 
+// ===== FUNCIONES DE ESTADÍSTICAS =====
 function updateStats() {
     const input = document.getElementById('jsonInput').value;
     document.getElementById('charCount').textContent = input.length.toLocaleString();
     document.getElementById('lineCount').textContent = ((input.match(/\n/g) || []).length + 1).toLocaleString();
 }
 
+// ===== GESTIÓN DE EJEMPLOS JSON =====
 async function loadExamples() {
     try {
         console.log('🔄 Cargando ejemplos desde el servidor...');
@@ -243,6 +294,7 @@ function setExample(jsonString) {
     setTimeout(() => parseJSON(), 500);
 }
 
+// ===== FUNCIONES DEL PARSER JSON =====
 function clearInput() {
     document.getElementById('jsonInput').value = '';
     document.getElementById('resultContent').innerHTML = `
@@ -525,7 +577,374 @@ function formatGoValue(value, indent = 0) {
     return String(value);
 }
 
-// Atajos de teclado
+// ===== FUNCIONES DEL CONVERSOR ARCHIVO → Go =====
+
+async function handleTxtConversion(event) {
+    console.log('🚀 Iniciando handleTxtConversion...');
+    
+    // CRÍTICO: Prevenir cualquier envío del formulario
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // Actualizar estado del conversor
+    updateConverterStatus('info', '<i class="fas fa-spinner fa-spin me-2"></i>Convirtiendo archivo...');
+    
+    // Obtener datos del formulario
+    const form = document.getElementById('txtUploadForm');
+    const formData = new FormData(form);
+    const fileInput = document.getElementById('txtFile');
+    
+    console.log('📋 Datos del formulario:', {
+        packageName: formData.get('packageName'),
+        variableName: formData.get('variableName'),
+        conversionType: formData.get('conversionType'),
+        file: fileInput.files[0]?.name
+    });
+    
+    // Validaciones
+    if (!fileInput.files || fileInput.files.length === 0) {
+        updateConverterStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>Por favor selecciona un archivo');
+        return false;
+    }
+    
+    const file = fileInput.files[0];
+    const fileName = file.name.toLowerCase();
+    
+    // SOPORTE PARA MÚLTIPLES TIPOS DE ARCHIVO
+    const supportedExtensions = ['.txt', '.json', '.md', '.csv', '.xml', '.yaml', '.yml'];
+    const isSupported = supportedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isSupported) {
+        updateConverterStatus('danger', 
+            '<i class="fas fa-times me-2"></i>Tipo de archivo no soportado. ' +
+            'Archivos permitidos: .txt, .json, .md, .csv, .xml, .yaml, .yml'
+        );
+        return false;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        updateConverterStatus('danger', '<i class="fas fa-times me-2"></i>El archivo es demasiado grande (máximo 10MB)');
+        return false;
+    }
+    
+    try {
+        console.log('📤 Enviando petición al servidor...');
+        
+        // PETICIÓN AJAX CON FETCH
+        const response = await fetch('/api/convert-to-go', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        console.log('📥 Respuesta del servidor:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Conversión exitosa:', result);
+        
+        if (result.success) {
+            displayGoCode(result);
+            showFileInfo(result);
+        } else {
+            displayConversionError(result.error || 'Error desconocido en la conversión');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en conversión:', error);
+        displayConversionError('Error de conexión: ' + error.message);
+    }
+    
+    return false;
+}
+
+function updateConverterStatus(type, message) {
+    const indicator = document.getElementById('converterStatusIndicator');
+    if (!indicator) return;
+    
+    const alertClasses = {
+        'info': 'alert-info',
+        'success': 'alert-success', 
+        'warning': 'alert-warning',
+        'danger': 'alert-danger'
+    };
+    
+    indicator.className = `alert ${alertClasses[type]} mb-3`;
+    indicator.innerHTML = message;
+}
+
+function displayGoCode(result) {
+    updateConverterStatus('success', '<i class="fas fa-check me-2"></i>Conversión exitosa');
+    
+    const container = document.getElementById('generatedCodeContainer');
+    const content = document.getElementById('generatedCodeContent');
+    
+    if (!container || !content) return;
+    
+    container.className = 'result-container';
+    
+    // Usar concatenación de strings para evitar problemas con template literals
+    content.innerHTML = 
+        '<div class="alert alert-success mb-4" role="alert">' +
+            '<h6 class="alert-heading mb-2">' +
+                '<i class="fas fa-check-circle me-2"></i>¡Conversión exitosa!' +
+            '</h6>' +
+            '<p class="mb-0">El archivo ha sido convertido a código Go correctamente.</p>' +
+        '</div>' +
+
+        '<div class="card border-primary mb-4">' +
+            '<div class="card-header bg-primary text-white">' +
+                '<div class="d-flex justify-content-between align-items-center">' +
+                    '<h6 class="mb-0">' +
+                        '<i class="fab fa-golang me-2"></i>Código Go Generado' +
+                    '</h6>' +
+                    '<div>' +
+                        '<button class="btn btn-light btn-sm me-2" onclick="copyGoCode()">' +
+                            '<i class="fas fa-copy me-1"></i>Copiar' +
+                        '</button>' +
+                        '<button class="btn btn-success btn-sm" onclick="downloadGoCode(\'' + 
+                        (result.download_filename || 'generated_code.go') + '\')">' +
+                            '<i class="fas fa-download me-1"></i>Descargar' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="card-body p-0">' +
+                '<div class="code-container">' +
+                    '<pre id="generatedGoCode" class="mb-0 p-3" style="font-size: 0.85rem; max-height: 400px; overflow-y: auto;">' +
+                    escapeHtml(result.go_code) +
+                    '</pre>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="row g-3">' +
+            '<div class="col-md-6">' +
+                '<div class="card border-info">' +
+                    '<div class="card-header bg-info text-white">' +
+                        '<h6 class="mb-0">' +
+                            '<i class="fas fa-info-circle me-2"></i>Información de Conversión' +
+                        '</h6>' +
+                    '</div>' +
+                    '<div class="card-body">' +
+                        '<div class="row g-2">' +
+                            '<div class="col-12">' +
+                                '<small><strong>Archivo original:</strong> ' + (result.original_file || 'archivo') + '</small>' +
+                            '</div>' +
+                            '<div class="col-12">' +
+                                '<small><strong>Tamaño:</strong> ' + formatBytes(result.file_size || 0) + '</small>' +
+                            '</div>' +
+                            '<div class="col-12">' +
+                                '<small><strong>Tiempo:</strong> ' + (result.conversion_time || '0ms') + '</small>' +
+                            '</div>' +
+                            '<div class="col-12">' +
+                                '<small><strong>Package:</strong> ' + (result.parameters?.package_name || 'main') + '</small>' +
+                            '</div>' +
+                            '<div class="col-12">' +
+                                '<small><strong>Variable:</strong> ' + (result.parameters?.variable_name || 'textContent') + '</small>' +
+                            '</div>' +
+                            '<div class="col-12">' +
+                                '<small><strong>Tipo:</strong> ' + (result.parameters?.conversion_type || 'variable') + '</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            
+            '<div class="col-md-6">' +
+                '<div class="card border-success">' +
+                    '<div class="card-header bg-success text-white">' +
+                        '<h6 class="mb-0">' +
+                            '<i class="fas fa-code me-2"></i>Siguiente Paso' +
+                        '</h6>' +
+                    '</div>' +
+                    '<div class="card-body">' +
+                        '<p class="mb-3"><small>Tu código Go está listo para usar:</small></p>' +
+                        '<div class="d-grid gap-2">' +
+                            '<button class="btn btn-success btn-sm" onclick="copyGoCode()">' +
+                                '<i class="fas fa-copy me-2"></i>Copiar Código' +
+                            '</button>' +
+                            '<button class="btn btn-primary btn-sm" onclick="downloadGoCode(\'' + 
+                            (result.download_filename || 'generated_code.go') + '\')">' +
+                                '<i class="fas fa-download me-2"></i>Descargar ' + 
+                                (result.download_filename || 'generated_code.go') +
+                            '</button>' +
+                            '<button class="btn btn-outline-secondary btn-sm" onclick="resetConverter()">' +
+                                '<i class="fas fa-refresh me-2"></i>Nueva Conversión' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+function displayConversionError(error) {
+    updateConverterStatus('danger', '<i class="fas fa-times me-2"></i>Error en la conversión');
+    
+    const container = document.getElementById('generatedCodeContainer');
+    const content = document.getElementById('generatedCodeContent');
+    
+    if (!container || !content) return;
+    
+    container.className = 'result-container';
+    content.innerHTML = 
+        '<div class="alert alert-danger mb-4" role="alert">' +
+            '<h6 class="alert-heading mb-2">' +
+                '<i class="fas fa-exclamation-triangle me-2"></i>Error en la conversión' +
+            '</h6>' +
+            '<p class="mb-0">No se pudo convertir el archivo a código Go.</p>' +
+        '</div>' +
+
+        '<div class="card border-danger mb-4">' +
+            '<div class="card-header bg-danger text-white">' +
+                '<h6 class="mb-0">' +
+                    '<i class="fas fa-bug me-2"></i>Detalle del error' +
+                '</h6>' +
+            '</div>' +
+            '<div class="card-body">' +
+                '<div class="code-container">' +
+                    '<pre class="mb-0 p-3 text-danger" style="font-size: 0.9rem; white-space: pre-wrap; background: #fff5f5;">' +
+                    error +
+                    '</pre>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="text-center">' +
+            '<button class="btn btn-outline-primary" onclick="resetConverter()">' +
+                '<i class="fas fa-refresh me-2"></i>Intentar de nuevo' +
+            '</button>' +
+        '</div>';
+}
+
+function showFileInfo(result) {
+    const fileInfo = document.getElementById('fileInfo');
+    const fileInfoContent = document.getElementById('fileInfoContent');
+    
+    if (!fileInfo || !fileInfoContent) return;
+    
+    fileInfoContent.innerHTML = 
+        '<div class="col-md-6">' +
+            '<small class="d-block"><strong>Nombre:</strong> ' + (result.original_file || 'archivo') + '</small>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+            '<small class="d-block"><strong>Tamaño:</strong> ' + formatBytes(result.file_size || 0) + '</small>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+            '<small class="d-block"><strong>Tiempo:</strong> ' + (result.conversion_time || '0ms') + '</small>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+            '<small class="d-block"><strong>Estado:</strong> <span class="text-success">Convertido</span></small>' +
+        '</div>';
+    
+    fileInfo.style.display = 'block';
+}
+
+function copyGoCode() {
+    const codeElement = document.getElementById('generatedGoCode');
+    if (!codeElement) return;
+    
+    const text = codeElement.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        updateConverterStatus('success', '<i class="fas fa-check me-2"></i>Código copiado al portapapeles');
+    }).catch(() => {
+        updateConverterStatus('warning', '<i class="fas fa-exclamation-triangle me-2"></i>No se pudo copiar automáticamente');
+    });
+}
+
+function downloadGoCode(filename) {
+    const codeElement = document.getElementById('generatedGoCode');
+    if (!codeElement) return;
+    
+    const text = codeElement.textContent;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'generated_code.go';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    updateConverterStatus('success', '<i class="fas fa-check me-2"></i>Archivo descargado');
+}
+
+function resetConverter() {
+    // Limpiar formulario
+    document.getElementById('txtUploadForm').reset();
+    
+    // Ocultar información del archivo
+    const fileInfo = document.getElementById('fileInfo');
+    if (fileInfo) fileInfo.style.display = 'none';
+    
+    // Restaurar estado inicial
+    const content = document.getElementById('generatedCodeContent');
+    if (content) {
+        content.innerHTML = 
+            '<div class="text-center py-4">' +
+                '<i class="fab fa-golang fa-3x text-muted mb-3"></i>' +
+                '<h5 class="text-muted mb-3">Conversor Archivo → Go</h5>' +
+                '<p class="text-muted mb-3">Sube un archivo y convierte su contenido a código Go.</p>' +
+                
+                '<div class="divider"></div>' +
+                
+                '<div class="row g-3">' +
+                    '<div class="col-md-6">' +
+                        '<div class="feature-item">' +
+                            '<i class="fas fa-file-code text-primary mb-2"></i>' +
+                            '<div><small><strong>TXT, JSON, MD</strong></small></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-md-6">' +
+                        '<div class="feature-item">' +
+                            '<i class="fas fa-function text-primary mb-2"></i>' +
+                            '<div><small><strong>CSV, XML, YAML</strong></small></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-md-6">' +
+                        '<div class="feature-item">' +
+                            '<i class="fas fa-sitemap text-primary mb-2"></i>' +
+                            '<div><small><strong>Estructuras</strong></small></div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-md-6">' +
+                        '<div class="feature-item">' +
+                            '<i class="fas fa-list text-primary mb-2"></i>' +
+                            '<div><small><strong>Variables y Funciones</strong></small></div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    }
+    
+    updateConverterStatus('info', '<i class="fas fa-upload me-2"></i>Sube un archivo para generar código Go...');
+}
+
+// ===== FUNCIONES AUXILIARES =====
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// ===== ATAJOS DE TECLADO =====
+
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
@@ -538,3 +957,9 @@ document.addEventListener('keydown', function(e) {
         formatJSON();
     }
 });
+
+// ===== LOG DE INICIALIZACIÓN =====
+console.log('✅ Script completo cargado correctamente');
+console.log('🔧 Funciones globales disponibles:', Object.keys(window).filter(key => 
+    ['convertFile', 'parseJSON', 'clearInput', 'formatJSON', 'showExamplesModal', 'toggleTheme'].includes(key)
+));
