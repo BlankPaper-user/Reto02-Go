@@ -101,9 +101,6 @@ Ejemplo:
                                     <button class="btn btn-success" onclick="formatJSON()">
                                         <i class="fas fa-magic me-2"></i>Formatear
                                     </button>
-                                    <button class="btn btn-info" onclick="showExamplesModal()" data-bs-toggle="modal" data-bs-target="#examplesModal">
-                                        <i class="fas fa-book me-2"></i>Ejemplos
-                                    </button>
                                 </div>
 
                                 <!-- Stats -->
@@ -152,11 +149,6 @@ Ejemplo:
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <!-- Status Indicator -->
-                                <div class="alert alert-info mb-3" role="alert" id="statusIndicator">
-                                    <i class="fas fa-clock me-2"></i>Esperando entrada...
-                                </div>
-
                                 <!-- Result Container -->
                                 <div class="result-container" id="resultContainer">
                                     <div id="resultContent">
@@ -167,35 +159,6 @@ Ejemplo:
                                                 Ingresa un JSON válido en el área de texto y presiona 
                                                 <span class="badge bg-primary">Parsear JSON</span> para ver el resultado.
                                             </p>
-                                            
-                                            <div class="divider"></div>
-                                            
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-check-circle text-success mb-2"></i>
-                                                        <div><small><strong>Objetos y Arrays</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-check-circle text-success mb-2"></i>
-                                                        <div><small><strong>Strings y Escape</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-check-circle text-success mb-2"></i>
-                                                        <div><small><strong>Números y Booleanos</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-check-circle text-success mb-2"></i>
-                                                        <div><small><strong>Errores Detallados</strong></small></div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -213,7 +176,7 @@ Ejemplo:
                         <div class="card h-100">
                             <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-file-upload me-2"></i>Subir Archivo
+                                    <i class="fas fa-file-upload me-2"></i>Conversor Simplificado
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -221,50 +184,20 @@ Ejemplo:
                                 <form id="txtUploadForm" enctype="multipart/form-data">
                                     <div class="mb-4">
                                         <label for="txtFile" class="form-label">
-                                            <i class="fas fa-file-alt me-2"></i>Seleccionar archivo
+                                            <i class="fas fa-file-alt me-2"></i>Seleccionar archivo para convertir
                                         </label>
                                         <input type="file" class="form-control" id="txtFile" name="txtFile" 
                                                accept=".txt,.json,.md,.csv,.xml,.yaml,.yml" required>
                                         <div class="form-text">
                                             <strong>Archivos soportados:</strong> .txt, .json, .md, .csv, .xml, .yaml, .yml 
                                             <br><strong>Tamaño máximo:</strong> 10MB
+                                            <br><small class="text-muted">Se convertirá automáticamente a una variable Go con configuración predeterminada</small>
                                         </div>
-                                    </div>
-
-                                    <!-- Configuration Options -->
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-6">
-                                            <label for="packageName" class="form-label">
-                                                <i class="fas fa-package me-2"></i>Nombre del Package
-                                            </label>
-                                            <input type="text" class="form-control" id="packageName" name="packageName" value="main" placeholder="main">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="variableName" class="form-label">
-                                                <i class="fas fa-code me-2"></i>Nombre de Variable/Función
-                                            </label>
-                                            <input type="text" class="form-control" id="variableName" name="variableName" value="textContent" placeholder="textContent">
-                                        </div>
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label for="conversionType" class="form-label">
-                                            <i class="fas fa-cogs me-2"></i>Tipo de Conversión
-                                        </label>
-                                        <select class="form-select" id="conversionType" name="conversionType">
-                                            <option value="variable">Variable (var)</option>
-                                            <option value="const">Constante (const)</option>
-                                            <option value="function">Función (func)</option>
-                                            <option value="struct">Estructura (struct)</option>
-                                            <option value="slice">Slice de líneas ([]string)</option>
-                                            <option value="map">Mapa de líneas (map[int]string)</option>
-                                        </select>
-                                        <div class="form-text">Selecciona cómo quieres que se genere el código Go</div>
                                     </div>
 
                                     <!-- Convert Button -->
                                     <button type="button" class="btn btn-primary w-100 mb-3" onclick="convertFile()">
-                                        <i class="fas fa-magic me-2"></i>Convertir a Go
+                                        <i class="fas fa-magic me-2"></i>Convertir a Código Go
                                     </button>
                                 </form>
 
@@ -282,63 +215,70 @@ Ejemplo:
                                     </div>
                                 </div>
 
-                                <!-- Supported Formats Info -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-file-import me-2"></i>Formatos Soportados
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-2">
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>TXT:</strong> Texto plano</small>
+                                <!-- Info Cards -->
+                                <div class="row g-3">
+                                    <!-- Conversion Info -->
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-cogs me-2"></i>Conversión Automática
+                                                </h6>
                                             </div>
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>JSON:</strong> Datos JSON</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>MD:</strong> Markdown</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>CSV:</strong> Datos CSV</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>XML:</strong> Documentos XML</small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="d-block"><strong>YAML:</strong> Config YAML</small>
+                                            <div class="card-body">
+                                                <div class="row g-2">
+                                                    <div class="col-12">
+                                                        <small class="d-block text-success">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            <strong>Package:</strong> main (predeterminado)
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <small class="d-block text-success">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            <strong>Variable:</strong> textContent (predeterminado)
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <small class="d-block text-success">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            <strong>Tipo:</strong> Variable global (var)
+                                                        </small>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Conversion Types Info -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-question-circle me-2"></i>Tipos de Conversión
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-2">
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Variable:</strong> Crea una variable global</small>
+                                    <!-- Supported Formats -->
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-file-import me-2"></i>Formatos Soportados
+                                                </h6>
                                             </div>
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Constante:</strong> Crea una constante</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Función:</strong> Crea una función que retorna el texto</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Estructura:</strong> Crea un struct con metadatos</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Slice:</strong> Cada línea como elemento</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <small class="d-block"><strong>Mapa:</strong> Líneas numeradas en un map</small>
+                                            <div class="card-body">
+                                                <div class="row g-2">
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>TXT:</strong> Texto plano</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>JSON:</strong> Datos JSON</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>MD:</strong> Markdown</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>CSV:</strong> Datos CSV</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>XML:</strong> Documentos XML</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <small class="d-block"><strong>YAML:</strong> Config YAML</small>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -358,7 +298,7 @@ Ejemplo:
                             <div class="card-body">
                                 <!-- Status Indicator -->
                                 <div class="alert alert-info mb-3" role="alert" id="converterStatusIndicator">
-                                    <i class="fas fa-upload me-2"></i>Sube un archivo para generar código Go...
+                                    <i class="fas fa-upload me-2"></i>Sube un archivo para generar código Go automáticamente...
                                 </div>
 
                                 <!-- Generated Code Container -->
@@ -366,39 +306,10 @@ Ejemplo:
                                     <div id="generatedCodeContent">
                                         <div class="text-center py-4">
                                             <i class="fab fa-golang fa-3x text-muted mb-3"></i>
-                                            <h5 class="text-muted mb-3">Conversor Archivo → Go</h5>
+                                            <h5 class="text-muted mb-3">Conversor Simplificado</h5>
                                             <p class="text-muted mb-3">
-                                                Sube cualquier archivo de texto y convierte su contenido a código Go.
+                                                Sube cualquier archivo de texto y se convertirá automáticamente a código Go.
                                             </p>
-                                            
-                                            <div class="divider"></div>
-                                            
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-file-code text-primary mb-2"></i>
-                                                        <div><small><strong>TXT, JSON, MD</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-function text-primary mb-2"></i>
-                                                        <div><small><strong>CSV, XML, YAML</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-sitemap text-primary mb-2"></i>
-                                                        <div><small><strong>Estructuras</strong></small></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="feature-item">
-                                                        <i class="fas fa-list text-primary mb-2"></i>
-                                                        <div><small><strong>Variables y Funciones</strong></small></div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -428,9 +339,9 @@ Ejemplo:
                     <small class="text-muted">Línea y columna exacta</small>
                 </div>
                 <div class="col-md-3 text-center">
-                    <i class="fas fa-file-code fa-2x text-info mb-3"></i>
-                    <h6 class="fw-bold">Conversor Multi-formato</h6>
-                    <small class="text-muted">TXT, JSON, MD, CSV, XML, YAML → Go</small>
+                    <i class="fas fa-magic fa-2x text-info mb-3"></i>
+                    <h6 class="fw-bold">Conversión Automática</h6>
+                    <small class="text-muted">Archivo → Código Go sin configuración</small>
                 </div>
             </div>
             
@@ -441,56 +352,451 @@ Ejemplo:
                     <strong>Desarrollado como parte del Reto #2 - TLP Go</strong>
                 </p>
                 <p class="text-muted small mb-0">
-                    Parser JSON y Conversor Multi-formato implementados desde cero
+                    Parser JSON y Conversor Automático implementados desde cero
                 </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Ejemplos -->
-    <div class="modal fade" id="examplesModal" tabindex="-1" aria-labelledby="examplesModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold" id="examplesModalLabel">
-                        <i class="fas fa-book me-2"></i>Biblioteca de Ejemplos JSON
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-4">
-                        <!-- Ejemplos Válidos -->
-                        <div class="col-lg-8">
-                            <h6 class="text-success mb-3">
-                                <i class="fas fa-check-circle me-2"></i>Ejemplos Válidos
-                            </h6>
-                            <div id="validExamples">
-                                <!-- Se llenarán dinámicamente -->
-                            </div>
-                        </div>
-                        
-                        <!-- Ejemplos Inválidos -->
-                        <div class="col-lg-4">
-                            <h6 class="text-danger mb-3">
-                                <i class="fas fa-times-circle me-2"></i>Ejemplos Inválidos
-                            </h6>
-                            <div id="invalidExamples">
-                                <!-- Se llenarán dinámicamente -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-2"></i>Cerrar
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="script.js"></script>
+    
+    <!-- SCRIPT INLINE PARA EVITAR PROBLEMAS DE CARGA -->
+    <script>
+        // ===== DEFINIR TODAS LAS FUNCIONES GLOBALMENTE INMEDIATAMENTE =====
+        console.log('🚀 Definiendo funciones globales...');
+
+        window.convertFile = function() {
+            console.log('🔄 convertFile ejecutándose...');
+            
+            const fileInput = document.getElementById('txtFile');
+            const statusElement = document.getElementById('converterStatusIndicator');
+            
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                if (statusElement) {
+                    statusElement.className = 'alert alert-warning mb-3';
+                    statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Por favor selecciona un archivo primero';
+                }
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
+            
+            const supportedExtensions = ['.txt', '.json', '.md', '.csv', '.xml', '.yaml', '.yml'];
+            const isSupported = supportedExtensions.some(ext => fileName.endsWith(ext));
+            
+            if (!isSupported) {
+                if (statusElement) {
+                    statusElement.className = 'alert alert-danger mb-3';
+                    statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Archivo no soportado. Use: .txt, .json, .md, .csv, .xml, .yaml, .yml';
+                }
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                if (statusElement) {
+                    statusElement.className = 'alert alert-danger mb-3';
+                    statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Archivo muy grande (máximo 10MB)';
+                }
+                return;
+            }
+            
+            if (statusElement) {
+                statusElement.className = 'alert alert-info mb-3';
+                statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Convirtiendo archivo...';
+            }
+            
+            const formData = new FormData();
+            formData.append('txtFile', file);
+            
+            fetch('/api/convert-to-go', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('✅ Conversión exitosa:', result);
+                
+                if (result.success) {
+                    if (statusElement) {
+                        statusElement.className = 'alert alert-success mb-3';
+                        statusElement.innerHTML = '<i class="fas fa-check me-2"></i>¡Conversión exitosa!';
+                    }
+                    showGeneratedCode(result);
+                } else {
+                    if (statusElement) {
+                        statusElement.className = 'alert alert-danger mb-3';
+                        statusElement.innerHTML = '<i class="fas fa-times me-2"></i>' + (result.error || 'Error en la conversión');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                if (statusElement) {
+                    statusElement.className = 'alert alert-danger mb-3';
+                    statusElement.innerHTML = '<i class="fas fa-times me-2"></i>Error: ' + error.message;
+                }
+            });
+        };
+
+        function showGeneratedCode(result) {
+            const contentElement = document.getElementById('generatedCodeContent');
+            if (!contentElement) return;
+            
+            const goCode = result.go_code || 'Error: No se generó código';
+            const filename = result.download_filename || 'generated_code.go';
+            
+            contentElement.innerHTML = `
+                <div class="alert alert-success mb-3">
+                    <h6><i class="fas fa-check-circle me-2"></i>¡Archivo convertido exitosamente!</h6>
+                    <p class="mb-0">Tu archivo ha sido convertido a código Go automáticamente.</p>
+                </div>
+                
+                <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fab fa-golang me-2"></i>Código Go Generado</h6>
+                            <div>
+                                <button class="btn btn-light btn-sm me-2" onclick="copyCode()">
+                                    <i class="fas fa-copy me-1"></i>Copiar
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="downloadCode('${filename}')">
+                                    <i class="fas fa-download me-1"></i>Descargar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <pre id="generatedCode" style="margin: 0; padding: 15px; background: #f8f9fa; color: #333; max-height: 400px; overflow-y: auto; font-size: 14px;">${escapeHtml(goCode)}</pre>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">Información</h6>
+                            </div>
+                            <div class="card-body">
+                                <small><strong>Archivo:</strong> ${result.original_file || 'archivo'}</small><br>
+                                <small><strong>Tamaño:</strong> ${formatBytes(result.file_size || 0)}</small><br>
+                                <small><strong>Package:</strong> main (automático)</small><br>
+                                <small><strong>Variable:</strong> textContent (automático)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Siguiente Paso</h6>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-success btn-sm w-100 mb-2" onclick="copyCode()">
+                                    <i class="fas fa-copy me-2"></i>Copiar Código
+                                </button>
+                                <button class="btn btn-primary btn-sm w-100 mb-2" onclick="downloadCode('${filename}')">
+                                    <i class="fas fa-download me-2"></i>Descargar ${filename}
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetForm()">
+                                    <i class="fas fa-refresh me-2"></i>Nuevo Archivo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.copyCode = function() {
+            const codeElement = document.getElementById('generatedCode');
+            if (codeElement) {
+                navigator.clipboard.writeText(codeElement.textContent)
+                    .then(() => alert('Código copiado al portapapeles'))
+                    .catch(() => alert('No se pudo copiar automáticamente'));
+            }
+        };
+
+        window.downloadCode = function(filename) {
+            const codeElement = document.getElementById('generatedCode');
+            if (codeElement) {
+                const blob = new Blob([codeElement.textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename || 'generated_code.go';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('Archivo descargado');
+            }
+        };
+
+        window.resetForm = function() {
+            const form = document.getElementById('txtUploadForm');
+            const content = document.getElementById('generatedCodeContent');
+            const status = document.getElementById('converterStatusIndicator');
+            
+            if (form) form.reset();
+            if (status) {
+                status.className = 'alert alert-info mb-3';
+                status.innerHTML = '<i class="fas fa-upload me-2"></i>Sube un archivo para convertir...';
+            }
+            if (content) {
+                content.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fab fa-golang fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted mb-3">Conversor Simplificado</h5>
+                        <p class="text-muted">Sube cualquier archivo de texto y se convertirá automáticamente a código Go.</p>
+                    </div>
+                `;
+            }
+        };
+
+        window.parseJSON = function() {
+            const input = document.getElementById('jsonInput');
+            if (!input) return;
+            
+            const jsonText = input.value.trim();
+            if (!jsonText) {
+                alert('Por favor ingresa un JSON');
+                return;
+            }
+            
+            fetch('/api/parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ json: jsonText })
+            })
+            .then(response => response.json())
+            .then(result => {
+                const resultElement = document.getElementById('resultContent');
+                if (resultElement) {
+                    if (result.success) {
+                        resultElement.innerHTML = `
+                            <div class="alert alert-success">
+                                <h6>✅ JSON parseado exitosamente</h6>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">Resultado</div>
+                                <div class="card-body">
+                                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${JSON.stringify(result.result, null, 2)}</pre>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultElement.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h6>❌ Error de parseo</h6>
+                                <p class="mb-0">${result.error}</p>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                const resultElement = document.getElementById('resultContent');
+                if (resultElement) {
+                    resultElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h6>❌ Error de conexión</h6>
+                            <p class="mb-0">${error.message}</p>
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        window.clearInput = function() {
+            const input = document.getElementById('jsonInput');
+            const result = document.getElementById('resultContent');
+            
+            if (input) input.value = '';
+            if (result) {
+                result.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-trash-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Área limpiada</h5>
+                        <p class="text-muted">Ingresa un nuevo JSON para parsear.</p>
+                    </div>
+                `;
+            }
+            updateStats();
+        };
+
+        window.formatJSON = function() {
+            const input = document.getElementById('jsonInput');
+            if (!input) return;
+            
+            try {
+                const parsed = JSON.parse(input.value);
+                input.value = JSON.stringify(parsed, null, 2);
+                updateStats();
+                alert('JSON formateado correctamente');
+            } catch (error) {
+                alert('JSON inválido, no se puede formatear');
+            }
+        };
+
+        window.toggleTheme = function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        };
+
+        // ===== FUNCIONES AUXILIARES =====
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function updateStats() {
+            const input = document.getElementById('jsonInput');
+            const charCount = document.getElementById('charCount');
+            const lineCount = document.getElementById('lineCount');
+            
+            if (input && charCount && lineCount) {
+                const value = input.value;
+                charCount.textContent = value.length.toLocaleString();
+                lineCount.textContent = ((value.match(/\n/g) || []).length + 1).toLocaleString();
+            }
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+            
+            if (icon && text) {
+                if (theme === 'dark') {
+                    icon.className = 'fas fa-sun';
+                    text.textContent = 'Modo Día';
+                } else {
+                    icon.className = 'fas fa-moon';
+                    text.textContent = 'Modo Noche';
+                }
+            }
+        }
+
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM cargado, inicializando...');
+            
+            // Cargar tema
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+            
+            // Configurar input JSON
+            const jsonInput = document.getElementById('jsonInput');
+            if (jsonInput) {
+                jsonInput.addEventListener('input', updateStats);
+            }
+            
+            // Actualizar estadísticas
+            updateStats();
+            
+            // Cargar ejemplos
+            loadExamples();
+            
+            console.log('✅ Inicialización completa');
+            console.log('✅ convertFile disponible:', typeof window.convertFile === 'function');
+            console.log('✅ parseJSON disponible:', typeof window.parseJSON === 'function');
+        });
+
+        async function loadExamples() {
+            try {
+                const response = await fetch('/api/examples');
+                if (response.ok) {
+                    const examples = await response.json();
+                    console.log('✅ Ejemplos cargados:', examples);
+                    renderExamples(examples);
+                }
+            } catch (error) {
+                console.log('⚠️ Error cargando ejemplos:', error);
+                renderDefaultExamples();
+            }
+        }
+
+        function renderExamples(examples) {
+            const grid = document.getElementById('examplesGrid');
+            if (!grid || !examples.ejemplos) return;
+            
+            grid.innerHTML = '';
+            examples.ejemplos.slice(0, 6).forEach((example, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-2';
+                
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-primary btn-sm w-100';
+                btn.innerHTML = `<i class="fas fa-play me-1"></i>${example.nombre}`;
+                btn.onclick = () => {
+                    const input = document.getElementById('jsonInput');
+                    if (input) {
+                        input.value = example.json;
+                        updateStats();
+                        setTimeout(() => window.parseJSON(), 500);
+                    }
+                };
+                
+                col.appendChild(btn);
+                grid.appendChild(col);
+            });
+        }
+
+        function renderDefaultExamples() {
+            const grid = document.getElementById('examplesGrid');
+            if (!grid) return;
+            
+            const defaultExamples = [
+                { nombre: 'Objeto Simple', json: '{"name": "Juan", "age": 30}' },
+                { nombre: 'Array', json: '["a", "b", "c"]' },
+                { nombre: 'Anidado', json: '{"user": {"name": "Ana"}}' }
+            ];
+            
+            grid.innerHTML = '';
+            defaultExamples.forEach(example => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 mb-2';
+                
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-primary btn-sm w-100';
+                btn.innerHTML = `<i class="fas fa-play me-1"></i>${example.nombre}`;
+                btn.onclick = () => {
+                    const input = document.getElementById('jsonInput');
+                    if (input) {
+                        input.value = example.json;
+                        updateStats();
+                        setTimeout(() => window.parseJSON(), 500);
+                    }
+                };
+                
+                col.appendChild(btn);
+                grid.appendChild(col);
+            });
+        }
+
+        // ===== VERIFICACIÓN FINAL =====
+        console.log('✅ Script inline cargado completamente');
+        console.log('✅ convertFile disponible:', typeof window.convertFile === 'function');
+        console.log('✅ parseJSON disponible:', typeof window.parseJSON === 'function');
+        console.log('🎯 TODAS LAS FUNCIONES ESTÁN LISTAS - EL BOTÓN DEBERÍA FUNCIONAR');
+    </script>
 </body>
 </html>
